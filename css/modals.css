@@ -1,0 +1,203 @@
+/* ===== MODALS & DIALOGS ===== */
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    backdrop-filter: blur(5px);
+}
+
+.modal-box {
+    animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.confirm-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10001;
+    align-items: center;
+    justify-content: center;
+}
+
+.confirm-modal-overlay.active {
+    display: flex;
+}
+
+.confirm-modal-box {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    padding: 30px;
+    max-width: 400px;
+    width: 90%;
+}
+
+.confirm-modal-box h3 {
+    margin: 0 0 10px 0;
+    color: var(--au-blue);
+    font-size: 1.3rem;
+}
+
+.confirm-modal-box p {
+    margin: 0 0 25px 0;
+    color: var(--text-main);
+    font-size: 1rem;
+    line-height: 1.5;
+}
+
+.confirm-modal-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.confirm-modal-buttons button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.confirm-modal-buttons .btn-confirm {
+    background: var(--danger);
+    color: white;
+}
+
+.confirm-modal-buttons .btn-confirm:hover {
+    background: #dc2626;
+    transform: translateY(-2px);
+}
+
+.confirm-modal-buttons .btn-cancel {
+    background: var(--border-color);
+    color: var(--text-main);
+}
+
+.confirm-modal-buttons .btn-cancel:hover {
+    background: #d1d5db;
+}
+
+.custom-dialog-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+
+.custom-dialog-overlay.active {
+    display: flex;
+}
+
+.custom-dialog-box {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.custom-dialog-box h3 {
+    margin: 0 0 20px 0;
+    color: var(--au-blue);
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+#custom-dialog-input {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 20px;
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    font-size: 1rem;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+}
+
+#custom-dialog-input:focus {
+    outline: none;
+    border-color: var(--au-blue);
+    box-shadow: 0 0 0 3px rgba(0, 51, 170, 0.1);
+}
+
+.custom-dialog-buttons {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+}
+
+.custom-dialog-buttons button {
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    font-size: 0.95rem;
+}
+
+.btn-gray {
+    background: #e0e0e0;
+    color: #333;
+}
+
+.btn-gray:hover {
+    background: #d0d0d0;
+}
+
+.emoji-picker-modal {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border: 2px solid var(--au-blue);
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 400px;
+    z-index: 10000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+.emoji-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.emoji-btn {
+    padding: 10px;
+    background: #f8fafc;
+    border: 1px solid #e6e6e6;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1.5rem;
+    transition: all 0.2s ease;
+}
+
+.emoji-btn:hover {
+    background: var(--au-blue);
+    transform: scale(1.1);
+}

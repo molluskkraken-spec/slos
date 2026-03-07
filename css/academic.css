@@ -1,0 +1,279 @@
+/* ===== ACADEMIC MANAGEMENT ===== */
+
+.academic-setup-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: white;
+    padding: 30px;
+    margin: 0 auto 50px;
+    max-width: 1000px;
+    border-radius: 20px;
+    backdrop-filter: blur(20px);
+    box-shadow: 0 25px 80px rgba(0, 51, 170, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    border: 2px solid rgba(0, 51, 170, 0.15);
+}
+
+.academic-tabs-nav {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+    padding: 15px 0;
+    background: transparent;
+    border-radius: 0;
+    box-shadow: none;
+}
+
+.academic-tab-btn {
+    padding: 12px 20px;
+    border: none;
+    background: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.95rem;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.academic-tab-btn:hover {
+    color: var(--au-blue);
+    background: rgba(0, 51, 170, 0.05);
+}
+
+.academic-tab-btn.active {
+    color: var(--au-blue);
+    border-bottom-color: var(--au-blue);
+    background: rgba(0, 51, 170, 0.08);
+}
+
+.academic-tabs-content {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.academic-tab-pane {
+    display: none;
+}
+
+.academic-tab-pane.active {
+    display: block;
+}
+
+.academic-content-card {
+    background: transparent;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: none;
+    margin-bottom: 20px;
+}
+
+.academic-list-display {
+    margin-top: 20px;
+    padding: 20px;
+    background: linear-gradient(135deg, #f8fbff 0%, #f0f4ff 100%);
+    border-radius: 10px;
+    border-left: none;
+    min-height: 80px;
+    max-height: 250px;
+    display: flex;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 12px;
+    overflow-y: auto;
+}
+
+.academic-empty-state {
+    margin-top: 30px;
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    background: #f9f9f9;
+    border-radius: 10px;
+    border: 2px dashed var(--border-color);
+}
+
+.academic-empty-state i {
+    font-size: 2.5rem;
+    color: var(--border-color);
+    margin-bottom: 15px;
+    display: block;
+}
+
+.academic-empty-state p {
+    margin: 0;
+    font-size: 1rem;
+}
+
+.academic-checkbox-list {
+    border: 2px solid var(--border-color);
+    padding: 12px;
+    border-radius: 8px;
+    background: white;
+    max-height: 250px;
+    overflow-y: auto;
+    margin-bottom: 10px;
+}
+
+.view-toggle-group {
+    display: flex;
+    gap: 8px;
+    background: #f5f5f5;
+    padding: 6px;
+    border-radius: 8px;
+}
+
+.view-toggle-btn {
+    padding: 8px 12px;
+    border: 2px solid transparent;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 1rem;
+    transition: all 0.3s ease;
+}
+
+.view-toggle-btn:hover {
+    background: #f0f0f0;
+    color: var(--au-blue);
+}
+
+.view-toggle-btn.active {
+    background: var(--au-blue);
+    color: white;
+    border-color: var(--au-blue);
+}
+
+.academic-list-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    font-size: 0.95rem;
+}
+
+.academic-list-table th {
+    background: linear-gradient(135deg, #f8fbff 0%, #f0f4ff 100%);
+    padding: 12px 16px;
+    text-align: left;
+    font-weight: 600;
+    color: var(--au-blue);
+    border-bottom: 2px solid var(--border-color);
+}
+
+.academic-list-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle;
+}
+
+.academic-list-table tbody tr:hover {
+    background: rgba(0, 51, 170, 0.03);
+}
+
+.academic-list-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.btn-delete-mini {
+    padding: 6px 10px;
+    background: #ff6b6b;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-delete-mini:hover {
+    background: #ff5252;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(255, 107, 107, 0.3);
+}
+
+.btn-delete-mini:active {
+    transform: translateY(0);
+}
+
+.btn-search-mini {
+    padding: 6px 10px;
+    background: #f0f0f0;
+    color: #666;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-search-mini:hover {
+    background: #e0e0e0;
+    color: var(--au-blue);
+    transform: translateY(-2px);
+}
+
+.btn-search-mini:active {
+    transform: translateY(0);
+}
+
+.btn-edit-mini {
+    padding: 6px 10px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.btn-edit-mini:hover {
+    background: #45a049;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(76, 175, 80, 0.3);
+}
+
+.btn-edit-mini:active {
+    transform: translateY(0);
+}
+
+.cluster-badge {
+    display: inline-block;
+    padding: 8px 14px;
+    background: linear-gradient(135deg, var(--au-blue) 0%, #1a5490 100%);
+    color: white;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(0, 51, 170, 0.15);
+    transition: all 0.3s ease;
+}
+
+.cluster-badge:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 51, 170, 0.25);
+}
+
+.cluster-item-new {
+    background: linear-gradient(135deg, #4CAF50 0%, #2e8b57 100%);
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.cluster-item-new:hover {
+    box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
