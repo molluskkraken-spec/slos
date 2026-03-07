@@ -1,0 +1,163 @@
+/* Layout utilities for template-generated content (scoresheet / new-scoresheet) */
+
+.scoresheet-page {
+    min-height: 100vh;
+    background: #f5f5f5;
+    padding: 15px 20px;
+}
+
+.scoresheet-header {
+    background: linear-gradient(135deg, var(--au-blue) 0%, #0ea5e9 100%);
+    color: white;
+    padding: 25px 30px;
+    border-radius: 0;
+    margin: -15px -20px 0 -20px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    margin-bottom: 30px;
+}
+
+.scoresheet-controls {
+    background: white;
+    padding: 15px 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.scoresheet-select {
+    padding: 10px 35px 10px 12px;
+    border: 2px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    background: white;
+    color: #1a1a1a;
+    font-weight: 600;
+    min-width: 160px;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+.quarter-group { display:flex; gap:6px; align-items:center; }
+
+.quarter-btn {
+    padding: 8px 14px;
+    border: 2px solid #e0e0e0;
+    background: white;
+    color: #1a1a1a;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+    font-size: 0.85rem;
+}
+.quarter-btn:hover { border-color: var(--au-blue); color: var(--au-blue); }
+.quarter-btn.active {
+    background: var(--au-blue);
+    color: white;
+    border-color: var(--au-blue);
+}
+
+/* Action buttons on the right */
+.scoresheet-action-btn {
+    padding: 10px 20px;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+}
+.scoresheet-action-btn.grade { background: #8b5cf6; }
+.scoresheet-action-btn.grade:hover { background: #7c3aed; }
+.scoresheet-action-btn.edit { background: #f43f5e; }
+.scoresheet-action-btn.edit:hover { background: #ec4899; }
+
+/* Table container */
+.scoresheet-table { background: white; border-radius: 8px; padding: 0; box-shadow: 0 2px 8px rgba(0,0,0,0.05); overflow: hidden; }
+.scoresheet-table table { width:100%; border-collapse: collapse; font-family: Arial, sans-serif; }
+.scoresheet-table thead tr { background: linear-gradient(135deg, var(--au-blue) 0%, #0ea5e9 100%); color: white; }
+.scoresheet-table th { padding: 14px 12px; text-align: center; font-weight:700; border-right: 1px solid rgba(255,255,255,0.2); font-size: 0.9rem; }
+.scoresheet-table th.title { text-align:left; min-width:180px; }
+
+/* Empty message */
+.scoresheet-empty {
+    text-align: center;
+    padding: 60px 20px;
+    color: #999;
+}
+
+/* Small utility */
+.btn-muted { padding: 8px 12px; background: #e9ecef; border-radius:6px; border:none; cursor:pointer; }
+
+/* New Scoresheet (student-oriented) */
+.ns-page { min-height: 100vh; background: #f5f5f5; padding: 20px; }
+.ns-header {
+    background: linear-gradient(135deg, var(--au-blue) 0%, #0ea5e9 100%);
+    color: white;
+    padding: 18px 22px;
+    border-radius: 8px;
+    box-shadow: 0 4px 8px rgba(59,130,246,0.12);
+    margin-bottom: 18px;
+    display:flex; flex-direction:column; gap:4px;
+}
+.ns-controls { display:flex; gap:12px; align-items:center; margin-bottom:12px; flex-wrap:wrap; }
+.ns-table { background:white; border-radius:8px; padding:0; box-shadow:0 2px 8px rgba(0,0,0,0.05); overflow:hidden; }
+.ns-table table { width:100%; border-collapse:collapse; }
+.ns-row { border-bottom:1px solid #eee; transition:all 0.2s; }
+.ns-row:hover { background:#f9f9f9; }
+.ns-col-no { padding:12px; text-align:left; font-weight:600; color:var(--au-blue); }
+.ns-col-title { padding:12px; }
+.ns-col-score { padding:12px; text-align:center; }
+.ns-col-date { padding:12px; text-align:center; color:#666; }
+.ns-col-deadline { padding:12px; text-align:center; }
+.ns-col-status { padding:12px; text-align:center; }
+.ns-actions-col { padding:12px; text-align:center; }
+
+/* Inputs inside rows */
+.ns-input { width:90%; padding:6px 8px; border:1px solid #ddd; border-radius:4px; font-size:0.9rem; }
+.ns-number { width:60px; padding:6px 8px; border:1px solid #ddd; border-radius:4px; text-align:center; }
+
+/* Indicator badges */
+.ns-badge { display:inline-block; padding:6px 12px; border-radius:20px; color:white; font-weight:600; font-size:0.85rem; }
+.ns-badge.pending { background:#dc3545; }
+.ns-badge.completed { background:#28a745; }
+
+/* Edit mode controls */
+.ns-edit-toolbar { background:white; border-radius:12px; padding:12px; box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+
+/* Teacher Record view styles (new) */
+.teacher-select { min-width: 220px; }
+.record-list-outer { padding: 18px; border-radius: 10px; border: 3px solid #0a60d6; }
+.record-list { display: flex; flex-direction: column; gap: 12px; padding: 6px; }
+.record-card { background: white; border: 2px solid #e6e6e6; border-radius: 8px; padding: 14px 16px; }
+.record-card-title { font-weight: 700; color: #111; font-size: 1rem; }
+.record-card-sub { color: #9aa1a8; font-size: 0.9rem; margin-top: 6px; }
+
+/* Rich Text Editor for Notes */
+#quickNoteInput {
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    white-space: pre-wrap;
+}
+
+#quickNoteInput:empty:before {
+    content: attr(data-placeholder);
+    color: #999;
+    font-style: italic;
+}
+
+#quickNoteInput:focus {
+    outline: none;
+    border-color: var(--au-blue);
+    box-shadow: 0 0 0 2px rgba(10, 96, 214, 0.1);
+}
+

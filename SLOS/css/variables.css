@@ -1,0 +1,17 @@
+/* ===== ROOT VARIABLES & THEMES ===== */
+
+:root {
+    --au-blue: #0033aa;
+    --au-blue-light: #1e5fd6;
+    --au-blue-dark: #001a5e;
+    --accent-cyan: #00d4ff;
+    --accent-purple: #7c3aed;
+    --success: #10b981;
+    --danger: #ef4444;
+    --bg-light: #f8fafc;
+    --bg-gradient: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%);
+    --card-bg: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --border-color: #e2e8f0;
+}

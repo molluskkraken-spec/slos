@@ -1,0 +1,122 @@
+/* ===== CARDS, GRIDS & CONTAINERS ===== */
+
+.info-card, .login-box { 
+    background: rgba(255, 255, 255, 0.95); 
+    backdrop-filter: blur(12px); 
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 12px 40px rgba(0, 51, 170, 0.12); 
+}
+
+.dashboard-content { 
+    max-width: 1200px; 
+    margin: 45px auto; 
+    padding: 0 25px; 
+}
+
+.quick-nav { 
+    display: flex; 
+    gap: 15px; 
+    margin-bottom: 40px; 
+    flex-wrap: wrap; 
+}
+
+.info-grid { 
+    display: grid; 
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); 
+    gap: 24px;
+    margin-bottom: 40px;
+}
+
+.info-card { 
+    background: white; 
+    border-radius: 16px; 
+    padding: 16px; 
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    overflow: hidden;
+    border: 1px solid var(--border-color);
+}
+
+.info-card:not(.notes-card-enhanced) {
+    padding: 0;
+}
+
+.info-card:not(.notes-card-enhanced) .info-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 16px;
+}
+
+.schedule-card-full {
+    background: white;
+    border-radius: 16px;
+    padding: 25px;
+    margin-top: 0;
+    margin-bottom: 0;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 12px 40px rgba(0, 51, 170, 0.12);
+    width: 100%;
+}
+
+.info-card:hover { 
+    transform: translateY(-12px) scale(1.02); 
+    box-shadow: 0 20px 40px rgba(0, 51, 170, 0.2); 
+}
+
+.info-img { width: 100%; border-radius: 4px; }
+
+.dropdown { 
+    position: relative; 
+    display: inline-block; 
+}
+
+.dropdown-content { 
+    display: none; 
+    position: absolute; 
+    background-color: white; 
+    min-width: 180px; 
+    box-shadow: 0 12px 32px rgba(0, 51, 170, 0.2); 
+    z-index: 1; 
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+}
+
+.dropdown:hover .dropdown-content { 
+    display: block; 
+}
+
+.dropdown-content button { 
+    width: 100%; 
+    padding: 14px 16px; 
+    border: none; 
+    background: none; 
+    text-align: left; 
+    cursor: pointer;
+    color: var(--text-main);
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.dropdown-content button:hover { 
+    background: linear-gradient(135deg, #f8fbff 0%, #f0f4ff 100%);
+    color: var(--au-blue);
+    border-left: 4px solid var(--au-blue);
+    padding-left: 12px;
+}
+
+.dropdown-section {
+    padding: 8px 0;
+}
+
+.dropdown-main-item {
+    font-weight: 600 !important;
+    background: #f0f0f0 !important;
+    color: var(--au-blue) !important;
+}
+
+.dropdown-main-item:hover {
+    background: #e8e8e8 !important;
+}

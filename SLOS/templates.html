@@ -1,0 +1,1079 @@
+<template id="login-view">
+        <div class="login-wrapper">
+            <div class="login-box shadow-card">
+                <img src="images/aulogo.png" alt="AU Logo" style="width: 80px; margin-bottom: 10px;"> 
+                <h2>Login to SLOS</h2>
+                <br>
+                    <div class="form-container">
+                    <input type="text" id="username" autocomplete="username" placeholder="Username" class="au-input">
+                    <div class="password-input-wrapper">
+                        <input type="password" id="password" autocomplete="current-password" placeholder="Password" class="au-input">
+                        <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility('password')">
+                            🙈
+                        </button>
+                    </div>
+                    <div style="display:flex; align-items:center; gap:8px; margin:8px 0;">
+                        <input type="checkbox" id="remember-me" />
+                        <label for="remember-me" style="font-size:0.9rem; color:#555; cursor:pointer;">Remember me</label>
+                    </div>
+                    <button onclick="handleLogin()" class="btn-blue-submit">Login</button>
+                    <p id="error-msg" class="error-msg"></p>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="dashboard-view">
+        <div class="dashboard-content">
+            <div id="role-quick-nav" class="quick-nav"></div>
+
+            <!-- Image cards on top (priority) -->
+            <div class="info-grid" id="main-grid">
+                <div class="info-card shadow-card"><img src="images/hymn.jpg" class="info-img"></div>
+                <div class="info-card shadow-card"><img src="images/VMC.jpg" class="info-img"></div>
+                <div class="info-card shadow-card notes-card-enhanced" id="notes-card-container">
+                    <div>
+                        <h4 style="margin: 0 0 10px 0; font-size: 1rem;">📝 Notes & Tasks</h4>
+                        <!-- Tab buttons -->
+                        <div style="display: flex; gap: 6px; margin-bottom: 10px;">
+                            <button onclick="switchNoteTab('notes')" id="notesTabBtn" class="note-tab-btn active" style="flex: 1; padding: 6px; background: var(--au-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">📖 Notes</button>
+                            <button onclick="switchNoteTab('checklist')" id="checklistTabBtn" class="note-tab-btn" style="flex: 1; padding: 6px; background: #ccc; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">✓ Checklist</button>
+                        </div>
+                    </div>
+
+                    <!-- Notes Tab -->
+                    <div id="notesTab" class="note-tab-content" style="display: flex; flex-direction: column; flex: 1; gap: 6px;">
+                        <div id="quickNoteInput" contenteditable="true" data-placeholder="Write your notes here..." style="width: 100%; flex: 1; padding: 8px; border: 1px solid #e6e6e6; border-radius: 6px; font-size: 0.85rem; font-family: inherit; overflow-y: auto; background: white; min-height: 100px;"></div>
+                        <!-- Rich text toolbar -->
+                        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
+                            <button onclick="formatNoteText('bold')" title="Bold" style="padding: 4px 8px; background: #fff; border: 1px solid #ddd; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 0.75rem;">B</button>
+                            <button onclick="formatNoteText('italic')" title="Italic" style="padding: 4px 8px; background: #fff; border: 1px solid #ddd; border-radius: 3px; cursor: pointer; font-style: italic; font-size: 0.75rem;">I</button>
+                            <button onclick="formatNoteText('underline')" title="Underline" style="padding: 4px 8px; background: #fff; border: 1px solid #ddd; border-radius: 3px; cursor: pointer; text-decoration: underline; font-size: 0.75rem;">U</button>
+                            <button onclick="openEmojiPicker('note')" title="Add emoji" style="padding: 4px 8px; background: #fff; border: 1px solid #ddd; border-radius: 3px; cursor: pointer; font-size: 0.8rem;">😊</button>
+                            <select id="noteColorTag" onchange="applyNoteColor()" style="padding: 4px 6px; border: 1px solid #ddd; border-radius: 3px; font-size: 0.75rem;">
+                                <option value="">Color</option>
+                                <option value="red">🔴 Important</option>
+                                <option value="orange">🟠 Urgent</option>
+                                <option value="green">🟢 Study</option>
+                                <option value="blue">🔵 Info</option>
+                                <option value="purple">🟣 Idea</option>
+                            </select>
+                        </div>
+                        <div style="display: flex; gap: 6px;">
+                            <button onclick="saveQuickNote()" style="flex: 1; padding: 6px; background: var(--au-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Save</button>
+                            <div id="noteSaveStatus" style="flex: 1; text-align: center; font-size: 0.7rem; color: #666; padding: 6px;"></div>
+                        </div>
+                    </div>
+
+                    <!-- Checklist Tab -->
+                    <div id="checklistTab" class="note-tab-content" style="display: none; flex-direction: column; flex: 1; gap: 6px;">
+                        <div id="checklistItems" style="flex: 1; overflow-y: auto; border: 1px solid #e6e6e6; border-radius: 4px; padding: 6px; background: white;"></div>
+                        <div style="display: flex; gap: 6px;">
+                            <input type="text" id="checklistInput" placeholder="Add task..." style="flex: 1; padding: 6px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.8rem;">
+                            <button onclick="openEmojiPicker('checklist')" title="Add emoji" style="padding: 4px 8px; background: #fff; border: 1px solid #ddd; border-radius: 3px; cursor: pointer; font-size: 0.8rem;">😊</button>
+                            <button onclick="addChecklistItem()" style="padding: 6px 10px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">+ Add</button>
+                        </div>
+                        <button onclick="saveChecklist()" style="width: 100%; padding: 6px; background: var(--au-blue); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.8rem;">Save</button>
+                    </div>
+
+                    <!-- Timestamp -->
+                    <div style="font-size: 0.65rem; color: #999; text-align: right;" id="noteTimestamp"></div>
+                </div>
+            </div>
+
+            <!-- Schedule Calendar below -->
+            <div class="schedule-card-full" id="schedule-card-container">
+                <div class="schedule-table-wrapper">
+                    <h3 style="margin: 0 0 12px 0; color: var(--au-blue); font-size: 1.1rem;">📅 Class Schedule</h3>
+
+                    <!-- Online Classes Section -->
+                    <div style="margin-bottom: 16px;">
+                        <h4 style="color: #0a60d6; font-size: 0.9rem; margin-bottom: 6px; border-bottom: 2px solid #0a60d6; padding-bottom: 4px;">🌐 Online Classes</h4>
+                        <table class="schedule-table" id="scheduleTableOnline">
+                            <thead>
+                                <tr style="background: linear-gradient(135deg, #f0f4ff 0%, #e8ebf7 100%);">
+                                    <th style="width: 100px;">Time</th>
+                                    <th>Monday</th>
+                                    <th>Tuesday</th>
+                                    <th>Wednesday</th>
+                                    <th>Thursday</th>
+                                    <th>Friday</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleTableBodyOnline">
+                                <!-- 8 rows: 1-2 Subject, 3 Health Break, 4-5 Subject, 6 Health Break, 7-8 Subject -->
+                                <tr class="schedule-row schedule-row-subject" data-row="1">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-subject" data-row="2">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-health-break" data-row="3">
+                                    <td class="schedule-cell health-break-cell" colspan="6" contenteditable="false" style="text-align: center; font-weight: 600;">Health Break</td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-subject" data-row="4">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-subject" data-row="5">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-health-break" data-row="6">
+                                    <td class="schedule-cell health-break-cell" colspan="6" contenteditable="false" style="text-align: center; font-weight: 600;">Health Break</td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-subject" data-row="7">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-subject" data-row="8">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Face-to-Face Classes Section -->
+                    <div>
+                        <h4 style="color: #d32f2f; font-size: 0.9rem; margin-bottom: 6px; border-bottom: 2px solid #d32f2f; padding-bottom: 4px;">🏫 Face-to-Face Classes</h4>
+                        <table class="schedule-table" id="scheduleTableOffline">
+                            <thead>
+                                <tr style="background: linear-gradient(135deg, #ffe8e8 0%, #ffd7d7 100%);">
+                                    <th style="width: 100px;">Time</th>
+                                    <th>Monday</th>
+                                    <th>Tuesday</th>
+                                    <th>Wednesday</th>
+                                    <th>Thursday</th>
+                                    <th>Friday</th>
+                                </tr>
+                            </thead>
+                            <tbody id="scheduleTableBodyOffline">
+                                <!-- 8 rows: 1-2 Subject, 3 Health Break, 4-5 Subject, 6 Health Break, 7-8 Subject -->
+                                <tr class="schedule-row schedule-row-subject" data-row="1">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-subject" data-row="2">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-health-break" data-row="3">
+                                    <td class="schedule-cell health-break-cell" colspan="6" contenteditable="false" style="text-align: center; font-weight: 600;">Health Break</td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-subject" data-row="4">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-subject" data-row="5">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-health-break" data-row="6">
+                                    <td class="schedule-cell health-break-cell" colspan="6" contenteditable="false" style="text-align: center; font-weight: 600;">Health Break</td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-subject" data-row="7">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                                <tr class="schedule-row schedule-row-subject" data-row="8">
+                                    <td class="schedule-time-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                    <td class="schedule-cell" contenteditable="true"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <p id="noScheduleMsg" style="text-align: center; color: #999; margin-top: 20px; font-size: 1rem; display: none;">No schedule available</p>
+                </div>
+            </div>
+
+        </div>
+    </template>
+
+    <template id="student-subjects-view">
+        <div class="dashboard-content">
+            <div class="info-grid" id="subjects-container"></div>
+        </div>
+    </template>
+
+    <template id="notifications-view">
+        <div class="dashboard-content">
+            <div class="page-nav-header">
+                <button type="button" onclick="goBack()" class="nav-pill"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>
+
+            <div style="margin-bottom: 30px;">
+                <h2 style="color: var(--au-blue); margin-bottom: 10px;">📋 Your Pending Tasks</h2>
+                <p style="color: #666; font-size: 0.95rem;">Click on a subject to view and mark your pending tasks</p>
+            </div>
+
+            <div id="notificationsContainer" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+                <!-- Notification cards will be rendered here -->
+            </div>
+
+            <div id="noNotifications" style="text-align: center; padding: 60px 20px; color: #999;">
+                <i class="fas fa-check-circle" style="font-size: 3rem; margin-bottom: 15px; display: block; opacity: 0.5;"></i>
+                <p style="font-size: 1.1rem; margin: 0;">You're all caught up! No pending tasks.</p>
+            </div>
+        </div>
+    </template>
+
+    <template id="notification-popup">
+        <div id="notificationPopup" style="position: fixed; top: 20px; right: 20px; background: white; border-radius: 12px; box-shadow: 0 8px 32px rgba(0, 51, 170, 0.2); padding: 30px; max-width: 500px; z-index: 10000; animation: slideIn 0.4s ease;">
+            <style>
+                @keyframes slideIn {
+                    from {
+                        transform: translateX(400px);
+                        opacity: 0;
+                    }
+                    to {
+                        transform: translateX(0);
+                        opacity: 1;
+                    }
+                }
+            </style>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px;">
+                <h3 style="margin: 0; color: var(--au-blue); font-size: 1.2rem;">
+                    <i class="fas fa-bell" style="margin-right: 8px;"></i>Pending Tasks
+                </h3>
+                <button onclick="closeNotificationPopup()" style="background: none; border: none; font-size: 1.3rem; cursor: pointer; color: #999;">×</button>
+            </div>
+            <div id="notificationPopupContent" style="max-height: 400px; overflow-y: auto;">
+                <!-- Notification items will be inserted here -->
+            </div>
+            <button onclick="openNotificationsView()" style="margin-top: 20px; width: 100%; padding: 12px; background: var(--au-blue); color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                View All Pending Tasks →
+            </button>
+        </div>
+    </template>
+
+    <template id="profile-view">
+    <div class="login-wrapper">
+        <div class="login-box shadow-card">
+            <div class="profile-header">
+                <div class="profile-pic-container">
+                    <img id="big-profile-pic" src="images/default.svg" 
+                         style="width: 100%; height: 100%; object-fit: cover;">
+                </div>
+                
+                <h2 id="profile-name-display" style="margin: 20px 0;">User</h2>
+            </div>
+            <div class="form-container">
+                <button onclick="openChangeProfile()" class="btn-blue-submit" style="margin-bottom: 10px;">Change Profile</button>
+                <button onclick="handleLogout()" class="btn-blue-submit" style="background: #dc3545;">Log out</button>
+                <br><br>
+                <button type="button" onclick="goBack()" class="nav-pill" style="background: none; color: var(--au-blue); border: 1px solid var(--au-blue);"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+    <template id="change-photo-view">
+        <div class="login-wrapper">
+            <div class="login-box shadow-card">
+                <div id="preview-pic" style="text-align:center;">
+                    <i class="fas fa-user-circle" style="font-size: 8rem; color: #ccc;"></i>
+                </div>
+                <br>
+                <div style="margin-bottom:10px; text-align:center; color:#666;">Choose one of the provided profile icons:</div>
+                <div id="icon-picker" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; max-width:520px; margin: 0 auto 16px auto;"></div>
+                <div style="display:flex; gap:10px; justify-content:center;">
+                    <button class="btn-blue-submit" onclick="saveMyProfilePic()">Save Icon</button>
+                    <button type="button" class="nav-pill" onclick="goBack()" style="background:none; border:1px solid var(--au-blue); color:var(--au-blue);">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="change-password-view">
+        <div class="dashboard-content">
+            <h1 style="text-align: left; margin-bottom: 10px;">Change Password</h1>
+            <p style="font-size: 0.85rem; margin-bottom: 30px; color: #666;">
+                Your password must be at least 6 characters including a combination of numbers and letters.
+            </p>
+            <div class="password-form" style="display: flex; flex-direction: column; gap: 20px; max-width: 400px;">
+                <div class="password-input-wrapper">
+                    <input type="password" placeholder="Current Password" class="au-input pill-input">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility(this)">
+                        🙈
+                    </button>
+                </div>
+                <div class="password-input-wrapper">
+                    <input type="password" autocomplete="new-password" placeholder="New password" class="au-input pill-input">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility(this)">
+                        🙈
+                    </button>
+                </div>
+                <div class="password-input-wrapper">
+                    <input type="password" autocomplete="new-password" placeholder="Re-type new password" class="au-input pill-input">
+                    <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility(this)">
+                        🙈
+                    </button>
+                </div>
+                <button onclick="validateAndChangePassword()" class="btn-blue-submit pill-input" style="padding: 15px;">Change password</button>
+                <button type="button" onclick="goBack()" style="background:none; border:none; color:var(--au-blue); cursor:pointer;">Cancel</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="subject-detail-view">
+    <div class="dashboard-content sheet-relative">
+        <div class="score-sheet-top-layout">
+            <div class="grade-nav">
+                <button class="nav-pill active"><i class="fas fa-arrow-left"></i> Back</button>
+                <div class="dropdown">
+                    <button class="nav-pill" id="quarterBtn">1ST QUARTER <i class="fas fa-chevron-down"></i></button>
+                    <div class="dropdown-content">
+                        <button onclick="updateQuarter('1st')">1st Quarter</button>
+                        <button onclick="updateQuarter('2nd')">2nd Quarter</button>
+                        <button onclick="updateQuarter('3rd')">3rd Quarter</button>
+                        <button onclick="updateQuarter('4th')">4th Quarter</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="table-wrapper shadow-card">
+            <table class="grade-table">
+                <thead>
+                    <tr>
+                        <th>NO.</th>
+                        <th>Concept Notes</th>
+                        <th>Activities</th>
+                        <th>Prelim</th>
+                        <th>Dept. Exam</th>
+                    </tr>
+                </thead>
+                <tbody id="scores-table-body"></tbody>
+            </table>
+        </div>
+    </div>
+    </template>
+
+    <template id="teacher-record-view">
+    <div class="dashboard-content">
+        <div class="page-nav-header">
+            <button type="button" onclick="goBack()" class="nav-pill"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+        <!-- Teacher record page content will be built here -->
+        <div id="record-page-content"></div>
+    </div>
+    </template>
+
+    <template id="student-selector-view">
+    <div class="dashboard-content">
+        <div class="page-nav-header">
+            <button onclick="renderApp()" class="nav-pill"><i class="fas fa-arrow-left"></i> Back</button>
+        </div>
+
+        <div class="form-card">
+            <div class="form-header-band" style="background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);">
+                <i class="fas fa-users"></i> Select Student
+            </div>
+
+            <div class="form-content-scroll" style="padding: 30px;">
+                <div style="background: #f8f9fa; padding: 20px; border-radius: 10px; margin-bottom: 25px;">
+                    <h3 style="margin-top: 0; color: var(--au-blue); font-size: 1.1rem;">Filter by Academic Details</h3>
+                    
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="clusterSelect">Cluster</label>
+                            <select id="clusterSelect" class="au-input" onchange="onClusterChange()">
+                                <option value="">--Select Cluster--</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="strandSelect">Strand</label>
+                            <select id="strandSelect" class="au-input" onchange="onStrandChange()" disabled>
+                                <option value="">--Select Strand--</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="sectionSelect">Section</label>
+                            <select id="sectionSelect" class="au-input" onchange="updateStudentList()" disabled>
+                                <option value="">--Select Section--</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 0;">
+                            <label for="genderSelect">Gender</label>
+                            <select id="genderSelect" class="au-input" onchange="updateStudentList()" disabled>
+                                <option value="all">All</option>
+                                <option value="boy">Boys</option>
+                                <option value="girl">Girls</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group" style="margin-top: 15px; margin-bottom: 0;">
+                        <label for="searchStudent">Search Name</label>
+                        <input type="text" id="searchStudent" placeholder="Type student name..." class="au-input" oninput="updateStudentList()" disabled>
+                    </div>
+                </div>
+
+                <div id="add-btn-wrapper" style="display:none; margin-bottom: 20px;">
+                    <button onclick="window.openAddStudentModal()" class="btn-blue-submit" style="width: 100%; background: #28a745;">
+                        <i class="fas fa-user-plus"></i> Add New Student
+                    </button>
+                </div>
+
+                <div style="background: white; border-radius: 10px; padding: 15px; border: 1px solid #e0e0e0;">
+                    <h4 style="margin-top: 0; color: var(--au-blue);">Student List</h4>
+                    <div id="custom-student-dropdown" class="custom-list-container shadow-card" style="max-height: 400px;">
+                        <p style="padding:15px; color:#999; text-align: center;">Please select a section first...</p>
+                    </div>
+                </div>
+
+                <input type="hidden" id="selectedStudentId">
+                <button onclick="confirmStudentSelection()" class="btn-blue-submit" disabled id="confirmStudentBtn" style="margin-top:20px; width: 100%;">Open Student Scores</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="edit-student-modal">
+    <div class="modal-overlay" id="editModalOverlay">
+        <div class="login-box shadow-card modal-box" style="max-width: 350px; padding: 30px;">
+            <h2 style="margin-top:0;">Edit Student</h2>
+            <br>
+            
+                <div style="text-align: center; margin-bottom: 20px;">
+                <img id="edit-img-preview" src="" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--au-blue);">
+                <br><br>
+                <button id="edit-photo-btn" class="nav-pill" style="font-size: 0.8rem; padding: 8px 15px;">Edit Photo</button>
+            </div>
+
+            <div class="form-container">
+                <label for="edit-name-input" style="display:block; text-align:left; font-weight:600; font-size:0.9rem; margin-bottom:5px;">Full Name:</label>
+                <input type="text" id="edit-name-input" class="au-input" placeholder="Enter name">
+                
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button onclick="saveStudentChanges()" class="btn-blue-submit">Save Changes</button>
+                    <button onclick="closeEditModal()" class="btn-blue-submit" style="background: #ccc; color: #333;">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="add-student-modal">
+    <div class="modal-overlay" id="addModalOverlay" onclick="closeAddModal()">
+        <div class="login-box shadow-card modal-box" style="max-width: 500px; padding: 30px;" onclick="event.stopPropagation()">
+            <h2 style="margin:0;">Quick Add Student</h2>
+            <br>
+            <div class="form-container" style="text-align: left;">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label for="add-fname">First Name:</label>
+                        <input type="text" id="add-fname" class="au-input" placeholder="Juan">
+                    </div>
+                    <div>
+                        <label for="add-mname">Middle Name:</label>
+                        <input type="text" id="add-mname" class="au-input" placeholder="P. (optional)">
+                    </div>
+                </div>
+
+                <label for="add-lname">Last Name:</label>
+                <input type="text" id="add-lname" class="au-input" placeholder="Dela Cruz">
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label for="add-bday">Birthday:</label>
+                        <input type="date" id="add-bday" class="au-input">
+                    </div>
+                    <div>
+                        <label for="add-gender">Gender:</label>
+                        <select id="add-gender" class="au-input">
+                            <option value="Male">Male</option>
+                            <option value="Female">Female</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label for="add-username">Username:</label>
+                        <input type="text" id="add-username" autocomplete="username" class="au-input" placeholder="juan2024">
+                    </div>
+                    <div>
+                        <label for="add-password">Password:</label>
+                        <div class="password-input-wrapper" style="margin-top: 5px;">
+                            <input type="password" id="add-password" autocomplete="new-password" class="au-input" placeholder="Set Password">
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility(this)">🙈</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                    <div>
+                        <label for="add-cluster-select">Cluster:</label>
+                        <select id="add-cluster-select" class="au-input" onchange="updateAddModalCluster()">
+                            <option value="">-- Select Cluster --</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="add-strand-select">Strand:</label>
+                        <select id="add-strand-select" class="au-input" onchange="updateAddModalSections()">
+                            <option value="">-- Select Strand --</option>
+                        </select>
+                    </div>
+                </div>
+
+                <label for="add-section-select">Section:</label>
+                <select id="add-section-select" class="au-input" onchange="updateAddModalSubjects()">
+                    <option value="">-- Select Section --</option>
+                </select>
+
+                <label for="add-subjects-list">Subject(s):</label>
+                <p style="font-size: 0.85rem; color: #666; margin: 5px 0 10px 0;">
+                    <i class="fas fa-info-circle"></i> Select which subjects this student will attend
+                </p>
+                <div id="add-subjects-list" style="display: grid; grid-template-columns: 1fr; gap: 8px; margin-bottom: 15px; max-height: 150px; overflow-y: auto; padding: 10px; background: #f5f5f5; border-radius: 4px;"></div>
+
+                <div style="display: flex; gap: 10px; margin-top: 15px;">
+                    <button onclick="saveNewStudent()" class="btn-blue-submit" style="background:#28a745;">Register & Add</button>
+                    <button onclick="closeAddModal()" class="btn-blue-submit" style="background:#ccc; color:#333;">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="add-student-teacher-view">
+    <div class="create-account-page">
+        <div class="page-nav-header">
+            <button class="nav-pill" onclick="goBackToTeacherStudentSelector()">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+        </div>
+
+        <div class="form-card">
+            <div class="form-header-band student-bg">
+                <i class="fas fa-user-plus"></i> Register New Student
+            </div>
+            
+            <div class="form-content-scroll">
+                <h3 class="section-header">Personal Information</h3>
+                <div class="form-row">
+                    <div class="form-group"><label for="ta-fname">First Name</label><input type="text" id="ta-fname" class="au-input"></div>
+                    <div class="form-group"><label for="ta-mname">Middle Name <span style="color: #999; font-size: 0.85rem;">(Optional)</span></label><input type="text" id="ta-mname" class="au-input"></div>
+                    <div class="form-group"><label for="ta-lname">Last Name</label><input type="text" id="ta-lname" class="au-input"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label for="ta-bday">Birthday</label><input type="date" id="ta-bday" class="date-input"></div>
+                    <div class="form-group">
+                        <label for="ta-gender">Gender</label>
+                        <select id="ta-gender" class="au-input"></select>
+                    </div>
+                </div>
+
+                <h3 class="section-header">Academic Details</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cluster</label>
+                        <input type="text" id="ta-cluster" class="au-input" disabled style="background: #f5f5f5;">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Strand</label>
+                        <select id="ta-strand" class="au-input" onchange="updateTeacherAddStudentSections()">
+                            <option value="">--Select Strand--</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Section</label>
+                        <select id="ta-section" class="au-input" onchange="updateTeacherAddStudentSubjects()">
+                            <option value="">--Select Section--</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Subject(s)</label>
+                    <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">
+                        <i class="fas fa-info-circle"></i> Select which subjects this student will attend
+                    </p>
+                    <div id="ta-subjects-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;"></div>
+                </div>
+
+                <h3 class="section-header">Login Credentials</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Username</label><input type="text" id="ta-username" autocomplete="username" class="au-input" placeholder="student.username"></div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="ta-password" autocomplete="new-password" class="au-input" placeholder="Set a password">
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility(this)">🙈</button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-header">Account Summary</h3>
+                <div id="teacher-add-student-summary">
+                    <p style="color: #999; margin: 0; font-style: italic;">Fill in all fields above to see complete summary</p>
+                </div>
+            </div>
+
+            <div class="form-footer">
+                <button class="save-btn-full student-bg" onclick="saveTeacherAddedStudent()">Create Student Account</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="inbox-view">
+    <div class="dashboard-content" style="height: 85vh; display: flex; flex-direction: column;">
+        <!-- Header -->
+        <div class="grade-nav">
+            <button class="nav-pill" onclick="renderApp()" style="background: #f43f5e; color: white; border: none;"><i class="fas fa-arrow-left"></i> Back</button>
+            <div style="width: 60px;"></div>
+        </div>
+
+        <!-- Main Container -->
+        <div class="inbox-container shadow-card" style="flex: 1; display: flex; margin-top: 10px; overflow: hidden; border-radius: 10px;">
+            <!-- Left Sidebar - Contacts -->
+            <div class="contacts-sidebar" style="width: 28%; border-right: 2px solid #e8ecf1; background: linear-gradient(180deg, #f9fafb 0%, #ffffff 100%); display: flex; flex-direction: column;">
+                <!-- Search Bar -->
+                <div style="padding: 10px;">
+                    <div style="position: relative;">
+                        <i class="fas fa-search" style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #999; font-size: 0.9rem;"></i>
+                        <input type="text" id="contact-search-input" placeholder="Search..." style="width: 100%; padding: 10px 12px 10px 35px; border: 2px solid #e8ecf1; border-radius: 8px; font-size: 0.9rem; background: #f5f7fa; transition: all 0.2s; box-sizing: border-box;" onfocus="this.style.borderColor='#f43f5e'; this.style.boxShadow='0 0 0 3px rgba(244,63,94,0.1)'" onblur="this.style.borderColor='#e8ecf1'; this.style.boxShadow='none'">
+                    </div>
+                </div>
+
+                <!-- Contacts List -->
+                <div id="contacts-list" style="overflow-y: auto; flex: 1; -webkit-overflow-scrolling: touch; padding: 0; margin: 0;">
+                </div>
+            </div>
+
+            <!-- Right Side - Chat -->
+            <div class="chat-area" style="width: 72%; display: flex; flex-direction: column; background: linear-gradient(180deg, #ffffff 0%, #f9fafb 100%);">
+                
+                <!-- Chat Header -->
+                <div id="chat-header" style="padding: 10px 20px; border-bottom: 2px solid #e8ecf1; display: flex; justify-content: space-between; align-items: center; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.05); margin: 0;">
+                    <span style="font-weight: 700; color: #333; font-size: 1rem;" id="chat-with-name">Select a contact</span>
+                </div>
+
+                <!-- Messages Feed -->
+                <div id="messages-feed" style="flex: 1; padding: 12px 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; -webkit-overflow-scrolling: touch; margin: 0;">
+                    <p style="text-align:center; color:#ccc; margin: 40px 0 0; font-style: italic; font-size: 0.9rem;">Select a contact to start messaging</p>
+                </div>
+
+                <!-- Message Input Area -->
+                <div id="message-input-area" style="padding: 10px 12px; border-top: 2px solid #e8ecf1; display: flex; gap: 8px; align-items: flex-end; background: white; display: none; margin: 0;">
+                    
+                    <input type="file" id="chat-img-input" accept="image/*" style="display: none;" onchange="handleChatImage(event)">
+                    <button onclick="document.getElementById('chat-img-input').click()" style="background: none; border: none; color: #f43f5e; cursor: pointer; font-size: 1.1rem; transition: all 0.2s; padding: 6px; display: flex; align-items: center; justify-content: center; margin: 0;" onmouseover="this.style.transform='scale(1.15)'" onmouseout="this.style.transform='scale(1)';">
+                        <i class="fas fa-image"></i>
+                    </button>
+
+                    <input type="text" id="chat-input" placeholder="Type message..." style="flex: 1; padding: 10px 12px; border: 2px solid #e8ecf1; border-radius: 8px; font-size: 0.9rem; background: #f5f7fa; transition: all 0.2s; box-sizing: border-box; margin: 0;" onfocus="this.style.borderColor='#f43f5e'; this.style.boxShadow='0 0 0 3px rgba(244,63,94,0.1)'" onblur="this.style.borderColor='#e8ecf1'; this.style.boxShadow='none'">
+                    <button onclick="sendChatMessage()" style="background: linear-gradient(135deg, #f43f5e 0%, #ec4899 100%); color: white; border: none; border-radius: 8px; padding: 10px 12px; cursor: pointer; font-weight: 600; transition: all 0.2s; display: flex; align-items: center; justify-content: center; margin: 0; font-size: 0.9rem;" onmouseover="this.style.boxShadow='0 4px 12px rgba(244,63,94,0.3)'; this.style.transform='translateY(-2px)'" onmouseout="this.style.boxShadow='none'; this.style.transform='translateY(0)'"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="report-modal">
+    <div class="modal-overlay" id="reportModalOverlay">
+        <div class="login-box shadow-card modal-box" style="max-width: 450px; padding: 25px; text-align: left;">
+            <h2 style="color: #dc3545; margin-top: 0;"><i class="fas fa-exclamation-triangle"></i> Report Message</h2>
+            
+            <div style="background: #f8d7da; padding: 10px; border-radius: 5px; margin: 15px 0; border: 1px solid #f5c6cb;">
+                <small style="font-weight: bold; color: #721c24;">Reported Message from <span id="report-offender-name"></span>:</small>
+                <p id="report-message-preview" style="margin: 5px 0; font-style: italic; color: #333;"></p>
+            </div>
+
+            <label>Why are you reporting this?</label>
+            <textarea id="report-reason" class="au-input" style="height: 100px; resize: none;" placeholder="Please describe the issue (e.g., Offensive language, bullying)..."></textarea>
+
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+                <button onclick="submitReport()" class="btn-blue-submit" style="background: #dc3545;">Submit Report</button>
+                <button onclick="closeReportModal()" class="btn-blue-submit" style="background: #ccc; color: #333;">Cancel</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="admin-reports-view">
+    <div class="dashboard-content">
+        <div class="grade-nav">
+            <button onclick="renderApp()" class="nav-pill"><i class="fas fa-arrow-left"></i> Back</button>
+            <span class="view-title">Incident Reports</span>
+        </div>
+        
+        <div class="table-wrapper shadow-card" style="margin-top: 20px;">
+            <table class="grade-table">
+                <thead>
+                    <tr>
+                        <th>Reporter</th>
+                        <th>Reported User</th>
+                        <th>Reason</th>
+                        <th>Date</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody id="reports-table-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</template>
+
+<template id="account-selection-view">
+    <div class="selection-page">
+        <div class="page-nav-header">
+            <button class="nav-pill" onclick="openStudentsView()">
+                <i class="fas fa-arrow-left"></i> Cancel
+            </button>
+                <select id="admin-account-type-select" class="au-input" style="min-width:220px; width:auto;" onchange="if(this.value==='teacher'){ openTeacherRegistration(); } else if(this.value==='student'){ openStudentRegistration(); }">
+                    <option value="">Select Account Type</option>
+                    <option value="student">Student Account Registration</option>
+                    <option value="teacher">Teacher Account Registration</option>
+                </select>
+        </div>
+        
+        <div class="selection-container">
+            <h2 class="selection-title">Select Account Type</h2>
+            <div class="selection-cards">
+                <div class="select-card" onclick="openStudentRegistration()">
+                    <div class="icon-circle student-color">
+                        <i class="fas fa-user-graduate"></i>
+                    </div>
+                    <h3>Student</h3>
+                    <p>Create a record for a learner.</p>
+                </div>
+
+                <div class="select-card" onclick="openTeacherRegistration()">
+                    <div class="icon-circle teacher-color">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <h3>Teacher</h3>
+                    <p>Create an account for faculty.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="create-student-view">
+    <div class="create-account-page">
+        <div class="page-nav-header">
+            <button type="button" class="nav-pill" onclick="goBack()">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <select id="admin-account-type-select" class="au-input" style="min-width:220px;" onchange="if(this.value==='teacher'){ openTeacherRegistration(); } else if(this.value==='student'){ openStudentRegistration(); }">
+                <option value="">Select Account Type</option>
+                <option value="student">Student Account Registration</option>
+                <option value="teacher">Teacher Account Registration</option>
+            </select>
+            <button id="csv-upload-btn" class="btn-blue-submit" style="display: none;" onclick="triggerCSVFileInput()">
+                <i class="fas fa-upload"></i> Upload CSV
+            </button>
+            <input type="file" id="csv-file-input" accept=".csv" style="display: none;" onchange="handleCSVFileUpload(event)">
+        </div>
+
+        <div class="form-card">
+            <div class="form-header-band student-bg">
+                <i class="fas fa-user-graduate"></i> Register New Student
+            </div>
+            
+            <div class="form-content-scroll">
+                <h3 class="section-header">Personal Information</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>First Name</label><input type="text" id="s-fname"></div>
+                    <div class="form-group"><label>Middle Name <span style="color: #999; font-size: 0.85rem;">(Optional)</span></label><input type="text" id="s-mname"></div>
+                    <div class="form-group"><label>Last Name</label><input type="text" id="s-lname"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Birthday</label><input type="date" class="au-input date-input" id="s-bday" onchange="calculateAgeFromBirthday('s')"></div>
+                    <div class="form-group"><label>Age</label><input type="number" class="au-input" id="s-age" min="0" max="120" placeholder="Auto-calculated" onchange="calculateBirthdayFromAge('s')"></div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <div class="input-with-btn">
+                            <select id="s-gender"></select>
+                            <button class="btn-add-mini" onclick="addNewOption('gender')">+</button>
+                            <button class="btn-del-mini" onclick="deleteCurrentOption('s-gender')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-header">Student Information</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>LRN <span style="color: #999; font-size: 0.85rem;">(Learner Reference Number)</span></label><input type="number" id="s-lrn" placeholder="e.g., 123456789012" maxlength="30"></div>
+                    <div class="form-group"><label>Student Number</label><input type="text" id="s-student-number" placeholder="e.g., 2024-001"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1/-1;"><label>Address</label><input type="text" id="s-address" placeholder="Complete address"></div>
+                </div>
+
+                <h3 class="section-header">Academic Details</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cluster</label>
+                        <select id="s-cluster" onchange="onStudentClusterChange()">
+                            <option value="">--Select Cluster--</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Strand</label>
+                        <select id="s-strand" onchange="onStudentStrandChange()">
+                            <option value="">--Select Strand--</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Section</label>
+                        <select id="s-section" onchange="updateStudentCompleteSummary()">
+                            <option value="">--Select Section--</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1/-1;">
+                        <label>Subject(s)</label>
+                        <p style="font-size: 0.85rem; color: #666; margin: 5px 0 10px 0;">
+                            <i class="fas fa-info-circle"></i> Select which subjects this student will attend
+                        </p>
+                        <div id="s-subjects-list" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 15px; background: #f5f5f5; border-radius: 8px; max-height: 200px; overflow-y: auto;"></div>
+                    </div>
+                </div>
+
+                <h3 class="section-header">Login Credentials</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Username</label><input type="text" id="s-username" autocomplete="username"></div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="s-password" autocomplete="new-password">
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility(this)">
+                                🙈
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-header">Account Summary</h3>
+                <div id="student-complete-summary">
+                    <p style="color: #999; margin: 0; font-style: italic;">Fill in all fields above to see complete summary</p>
+                </div>
+            </div>
+
+            <div class="form-footer">
+                <button class="save-btn-full student-bg" onclick="saveStudentAccount()">Create Student Account</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="csv-preview-modal">
+    <div class="modal-overlay" id="csv-modal-overlay" onclick="closeCSVPreviewModal()">
+        <div class="modal-content" style="max-width: 900px; max-height: 80vh; display: flex; flex-direction: column;" onclick="event.stopPropagation()">
+            <div class="modal-header">
+                <h2>CSV Import Preview</h2>
+                <button class="modal-close-btn" onclick="closeCSVPreviewModal()">&times;</button>
+            </div>
+            
+            <div class="modal-body" style="flex: 1; overflow-y: auto; padding: 20px;">
+                <div style="margin-bottom: 15px; padding: 10px; background: #f0f7ff; border-left: 4px solid #0a60d6; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 0.9rem; color: #0a60d6;">
+                        <i class="fas fa-info-circle"></i> 
+                        <span id="csv-row-count">0</span> students will be imported. Review and edit data below before confirming.
+                    </p>
+                </div>
+                
+                <div style="overflow-x: auto; margin-bottom: 20px;">
+                    <table id="csv-preview-table" class="au-table" style="width: 100%; border-collapse: collapse;">
+                        <thead style="background: #f5f5f5;">
+                            <tr>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">#</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">First Name</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Middle Name</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Last Name</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Birthday</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Gender</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Cluster</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Strand</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Section</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Subjects</th>
+                            </tr>
+                        </thead>
+                        <tbody id="csv-preview-tbody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="modal-footer" style="padding: 15px 20px; border-top: 1px solid #e0e0e0; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn-secondary" onclick="closeCSVPreviewModal()" style="padding: 10px 20px; background: #e0e0e0; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Cancel</button>
+                <button class="btn-blue-submit" onclick="confirmCSVImport()" style="padding: 10px 20px;">
+                    <i class="fas fa-check"></i> Import <span id="csv-import-count">0</span> Students
+                </button>
+            </div>
+        </div>
+    </div>
+</template>
+
+<template id="create-teacher-view">
+    <div class="create-account-page">
+        <div class="page-nav-header">
+            <button type="button" class="nav-pill" onclick="goBack()">
+                <i class="fas fa-arrow-left"></i> Back
+            </button>
+            <select id="admin-account-type-select-teacher" class="au-input" style="min-width:220px; width:auto;" onchange="if(this.value==='teacher'){ openTeacherRegistration(); } else if(this.value==='student'){ openStudentRegistration(); }">
+                <option value="">Select Account Type</option>
+                <option value="student">Student Account Registration</option>
+                <option value="teacher">Teacher Account Registration</option>
+            </select>
+        </div>
+
+        <div class="form-card">
+            <div class="form-header-band teacher-bg">
+                <i class="fas fa-chalkboard-teacher"></i> Register New Teacher
+            </div>
+
+            <div class="form-content-scroll">
+                <h3 class="section-header">Personal Information</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>First Name</label><input type="text" id="t-fname"></div>
+                    <div class="form-group"><label>Middle Name <span style="color: #999; font-size: 0.85rem;">(Optional)</span></label><input type="text" id="t-mname"></div>
+                    <div class="form-group"><label>Last Name</label><input type="text" id="t-lname"></div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Birthday</label><input type="date" class="au-input date-input" id="t-bday" onchange="calculateAgeFromBirthday('t')"></div>
+                    <div class="form-group"><label>Age</label><input type="number" class="au-input" id="t-age" min="0" max="120" placeholder="Auto-calculated" onchange="calculateBirthdayFromAge('t')"></div>
+                    <div class="form-group">
+                        <label>Gender</label>
+                        <div class="input-with-btn">
+                            <select id="t-gender"></select>
+                            <button class="btn-add-mini" onclick="addNewOption('gender')">+</button>
+                            <button class="btn-del-mini" onclick="deleteCurrentOption('t-gender')"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                </div>
+
+                <h3 class="section-header">Personal Details</h3>
+                <div class="form-row">
+                    <div class="form-group" style="grid-column: 1/-1;"><label>Address</label><input type="text" id="t-address" placeholder="Complete address"></div>
+                </div>
+
+                <h3 class="section-header">Assignment Details</h3>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cluster</label>
+                        <select id="t-cluster" onchange="onTeacherClusterChange()">
+                            <option value="">--Select Cluster--</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <h4 style="margin-top: 0; color: var(--au-blue);">Strands & Sections to Handle</h4>
+                    <div id="teacher-strand-sections-container" style="display: flex; flex-direction: column; gap: 15px;"></div>
+                </div>
+
+                <h3 class="section-header">Subjects to Handle</h3>
+                <p style="font-size: 0.85rem; color: #666; margin-bottom: 10px;">
+                    <i class="fas fa-info-circle"></i> Select subjects from the cluster. Only subjects available in the selected cluster will appear.
+                </p>
+                <div id="t-subjects-list" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; padding: 10px 0;"></div>
+
+                <h3 class="section-header">Login Credentials</h3>
+                <div class="form-row">
+                    <div class="form-group"><label>Username</label><input type="text" id="t-username" autocomplete="username"></div>
+                    <div class="form-group">
+                        <label>Password</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="t-password" autocomplete="new-password">
+                            <button type="button" class="password-toggle-btn" onclick="togglePasswordVisibility(this)">
+                                🙈
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: #f0f8ff; padding: 20px; border-radius: 8px; border-left: 4px solid var(--au-blue); margin-top: 30px;">
+                    <h3 style="margin-top: 0; color: var(--au-blue); display: flex; align-items: center; gap: 10px;">
+                        <i class="fas fa-user-check"></i> Teacher Information Summary
+                    </h3>
+                    <div id="teacher-complete-summary" style="display: grid; gap: 15px; font-size: 0.95rem;">
+                        <p style="color: #999; margin: 0; font-style: italic;">Fill in all fields above to see complete summary</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-footer">
+                <button class="save-btn-full teacher-bg" onclick="saveTeacherAccount()">Create Teacher Account</button>
+            </div>
+        </div>
+    </div>
+</template>
+
+    <template id="custom-dialog-template">
+        <div class="custom-dialog-overlay" id="custom-dialog-overlay">
+            <div class="custom-dialog-box shadow-card">
+                <h3 id="custom-dialog-title">Enter Value</h3>
+                <input type="text" id="custom-dialog-input" class="au-input" placeholder="Enter here..." />
+                <div class="custom-dialog-buttons">
+                    <button onclick="closeCustomDialog()" class="btn-gray">Cancel</button>
+                    <button onclick="confirmCustomDialog()" class="btn-blue-submit">OK</button>
+                </div>
+            </div>
+        </div>
+    </template>
