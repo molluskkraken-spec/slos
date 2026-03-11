@@ -3132,6 +3132,71 @@ export function saveStudentAccount() {
     openStudentsView(); // Return to main list
 }
 
+// Create new teacher account
+export function saveTeacherAccount() {
+    const fname = document.getElementById('t-fname').value.trim();
+    const mname = document.getElementById('t-mname').value.trim();
+    const lname = document.getElementById('t-lname').value.trim();
+    const bday = document.getElementById('t-bday').value;
+    const age = document.getElementById('t-age').value;
+    const gender = document.getElementById('t-gender').value;
+    const address = document.getElementById('t-address').value.trim();
+    const cluster = document.getElementById('t-cluster').value;
+    const user = document.getElementById('t-username').value.trim();
+    const pass = document.getElementById('t-password').value;
+
+    if (!fname || !lname || !user || !pass || !cluster || !gender) {
+        showSuccessToast("⚠️ Please fill in all required fields.");
+        return;
+    }
+
+    if (userAccounts[user.toLowerCase()]) {
+        showSuccessToast("⚠️ Username already exists.");
+        return;
+    }
+
+    // Get selected strands and sections
+    const strandSections = getTeacherStrandSections();
+    if (Object.keys(strandSections).length === 0) {
+        showSuccessToast("⚠️ Please select at least one strand.");
+        return;
+    }
+
+    // Get selected subjects
+    const selectedSubjects = [];
+    document.querySelectorAll('#t-subjects-list input:checked').forEach(cb => {
+        selectedSubjects.push(cb.value);
+    });
+
+    if (selectedSubjects.length === 0) {
+        showSuccessToast("⚠️ Please select at least one subject.");
+        return;
+    }
+
+    const fullName = `${fname} ${mname ? mname + ' ' : ''}${lname}`;
+
+    // Create teacher login account
+    userAccounts[user.toLowerCase()] = {
+        password: pass,
+        role: "teacher",
+        username: user.toLowerCase(),
+        img: "images/default.svg",
+        name: fullName,
+        birthday: bday,
+        gender: gender,
+        address: address,
+        age: age ? parseInt(age) : null,
+        cluster: cluster,
+        assignedStrandSections: strandSections,
+        assignedSubjects: selectedSubjects
+    };
+
+    saveAccounts();
+    
+    showSuccessToast("✅ Teacher Account Created Successfully!");
+    openAdminTeacherSelector(); // Return to teacher list
+}
+
 
 /* =========================================
    2. EXISTING VIEW & GRADING LOGIC (UNCHANGED)

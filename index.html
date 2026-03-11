@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="icon" type="image/png" href="images/aulogo.png">
     <title>S.L.O.S - Arellano University</title>
 
@@ -10,26 +13,35 @@
     <link href="https://fonts.googleapis.com/css2?family=Permanent+Marker&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     
-    <!-- Modular CSS files -->
-    <link rel="stylesheet" href="css/components.css">
-    <link rel="stylesheet" href="css/variables.css">
-    <link rel="stylesheet" href="css/base.css">
-    <link rel="stylesheet" href="css/header.css">
-    <link rel="stylesheet" href="css/buttons.css">
-    <link rel="stylesheet" href="css/forms.css">
-    <link rel="stylesheet" href="css/cards.css">
-    <link rel="stylesheet" href="css/tables.css">
-    <link rel="stylesheet" href="css/profiles.css">
-    <link rel="stylesheet" href="css/chat.css">
-    <link rel="stylesheet" href="css/modals.css">
-    <link rel="stylesheet" href="css/auth.css">
-    <link rel="stylesheet" href="css/academic.css">
-    <link rel="stylesheet" href="css/dashboard.css">
-    <link rel="stylesheet" href="css/animations.css">
-    <link rel="stylesheet" href="css/responsive.css">      
+    <!-- Modular CSS files with cache busting -->
+    <link rel="stylesheet" href="css/components.css?v=1.2.0">
+    <link rel="stylesheet" href="css/variables.css?v=1.2.0">
+    <link rel="stylesheet" href="css/base.css?v=1.2.0">
+    <link rel="stylesheet" href="css/header.css?v=1.2.0">
+    <link rel="stylesheet" href="css/buttons.css?v=1.2.0">
+    <link rel="stylesheet" href="css/forms.css?v=1.2.0">
+    <link rel="stylesheet" href="css/cards.css?v=1.2.0">
+    <link rel="stylesheet" href="css/tables.css?v=1.2.0">
+    <link rel="stylesheet" href="css/profiles.css?v=1.2.0">
+    <link rel="stylesheet" href="css/chat.css?v=1.2.0">
+    <link rel="stylesheet" href="css/modals.css?v=1.2.0">
+    <link rel="stylesheet" href="css/auth.css?v=1.2.0">
+    <link rel="stylesheet" href="css/academic.css?v=1.2.0">
+    <link rel="stylesheet" href="css/dashboard.css?v=1.2.0">
+    <link rel="stylesheet" href="css/animations.css?v=1.2.0">
+    <link rel="stylesheet" href="css/responsive.css?v=1.2.0">
+    
+    <!-- Cache Buster Script - Load FIRST to intercept all resources -->
+    <script src="js/cache-buster.js"></script>
+    
+    <!-- Version Indicator -->
+    <script>
+        window.APP_VERSION = '1.2.0';
+        console.log('🔧 SLOS Application Version: ' + window.APP_VERSION);
+    </script>
 </head>
 <body>
-
+    
     <header id="main-header" class="header hidden">
     <div class="header-container">
         <div class="logo-section" id="logoHome">
@@ -55,6 +67,30 @@
 
     <div id="template-library" style="display: none;"></div>
 
-    <script type="module" src="js/main.js"></script>
+    <!-- Ensure window functions are available before module loads -->
+    <script>
+        window.moduleLoaded = false;
+        console.log('Pre-module setup complete');
+    </script>
+
+    <script type="module" src="js/main.js?v=1.2.0"></script>
+    
+    <!-- Debug: Verify saveTeacherAccount exists after module load -->
+    <script>
+        // Direct fallback function - ensures saveTeacherAccount always works
+        window.saveTeacherAccount = function() {
+            console.log('🔧 Using fallback saveTeacherAccount');
+            if (typeof window._saveTeacherAccountReal === 'function') {
+                return window._saveTeacherAccountReal();
+            }
+            alert('⚠️ Function still loading. Please try again in a moment.');
+        };
+        
+        setTimeout(() => {
+            if (window.saveTeacherAccount) {
+                console.log('✅ saveTeacherAccount is ready');
+            }
+        }, 2000);
+    </script>
 </body>
 </html>

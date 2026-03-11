@@ -198,6 +198,23 @@ window.requestNotificationPermission = function() {
 // Expose getters for debugging
 window.getCurrentUser = getCurrentUser;
 window.getCurrentStudentId = getCurrentStudentId;
+
+// Verify critical functions are exposed
+setTimeout(() => {
+    const criticalFunctions = [
+        'saveTeacherAccount',
+        'saveStudentAccount',
+        'openAdminTeacherSelector'
+    ];
+    
+    criticalFunctions.forEach(fn => {
+        if (typeof window[fn] === 'function') {
+            console.log(`✅ ${fn} is available`);
+        } else {
+            console.warn(`⚠️  ${fn} is NOT available - Type: ${typeof window[fn]}`);
+        }
+    });
+}, 1000);
 window.goBack = goBack;
 window.pushNavigation = pushNavigation;
 window.getStudentData = getStudentData;

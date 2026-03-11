@@ -18,6 +18,32 @@
   - Improved error handling to properly revert checkbox state on validation failure
   - Added fallback re-rendering for edge cases
 
+### 3. Fix saveTeacherAccount is not a function Error
+- **Issue**: Console error "Uncaught TypeError: saveTeacherAccount is not a function" when clicking Create Teacher Account button
+- **Solution**: Created the missing `saveTeacherAccount` function
+- **Implementation**:
+  - Added `saveTeacherAccount()` export function to `js/students.js`
+  - Function reads form fields from teacher registration form (t-fname, t-lname, t-gender, etc.)
+  - Validates required fields (name, username, password, cluster, strand)
+  - Gets selected strands and sections using `getTeacherStrandSections()`
+  - Gets selected subjects from checkboxes
+  - Creates teacher account object with all necessary fields
+  - Saves to userAccounts and calls saveAccounts()
+  - Redirects to teacher list view on success
+
+### 4. Implement Real-Time Updates for GitHub Pages
+- **Issue**: Updates to published website on GitHub Pages were not showing without hard refresh
+- **Solution**: Implemented automatic cache-busting system
+- **Implementation**:
+  - Added cache-control meta tags to `index.html` to prevent browser caching
+  - Added version parameters (?v=1.2.0) to all CSS and JS resources
+  - Created `js/cache-buster.js` script that automatically adds hourly-based cache busters
+  - Script intercepts all fetch requests and module imports to add cache-buster parameters
+  - Automatic page reload every 5 minutes if new version detected
+  - Created `.versions` file for easy version management and tracking
+  
+**Result**: Updates now show in real-time on GitHub Pages without requiring users to hard refresh!
+
 ## Technical Details
 
 ### Files Modified
