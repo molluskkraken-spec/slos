@@ -155,3 +155,65 @@
         padding: 6px 4px;
     }
 }
+
+/* ===== ACCOUNT TYPE SELECTOR RESPONSIVE ===== */
+@media (max-width: 1024px) {
+    .page-nav-header {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+
+    .account-type-wrapper {
+        max-width: none;
+        flex-basis: 100%;
+    }
+
+    .account-type-select {
+        min-width: 100%;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .account-type-wrapper {
+        flex-basis: 100%;
+        max-width: 100%;
+    }
+
+    .account-type-select {
+        min-width: 100%;
+        max-width: 100%;
+        font-size: 0.9rem;
+        padding: 11px 16px 11px 14px;
+    }
+
+    .account-type-label {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .page-nav-header {
+        width: 98%;
+        gap: 10px;
+        flex-direction: column;
+    }
+
+    .account-type-wrapper {
+        flex-basis: 100%;
+        max-width: 100%;
+        flex-direction: column;
+    }
+
+    .account-type-label {
+        width: 100%;
+        font-size: 0.85rem;
+    }
+
+    .account-type-select {
+        width: 100%;
+        min-width: 100%;
+        font-size: 0.85rem;
+        padding: 10px 16px 10px 14px;
+    }
+}

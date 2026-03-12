@@ -7,8 +7,6 @@ import { renderApp } from './app.js';
 import * as auth from './auth.js';
 import * as students from './students.js';
 import * as messaging from './messaging.js';
-import * as scoresheet from './new-scoresheet.js';
-import * as scoresheetModule from './scoresheet.js';
 import { getStudentData, loadQuickNote, loadChecklist, renderStudentSchedule, renderTeacherSchedule } from './utils.js';
 
 // Expose functions to window for HTML onclick handlers
@@ -163,26 +161,15 @@ window.sendChatMessage = messaging.sendChatMessage;
 window.handleChatImage = messaging.handleChatImage;
 window.loadChat = messaging.loadChat;
 
-// Expose notification and scoresheet functions  
-// (These are self-assigned to window by new-scoresheet.js when it loads)
-// Just reference them to ensure they're available
+// Expose notification and scoresheet functions
 window.showPendingNotificationPopup = window.showPendingNotificationPopup || function() {};
 window.openNotificationsView = window.openNotificationsView || function() {};
 window.openNotificationsViewForSubject = window.openNotificationsViewForSubject || function() {};
 window.closeNotificationPopup = window.closeNotificationPopup || function() {};
-window.renderNewScoresheet = window.renderNewScoresheet || function() {};
-window.switchCategory = window.switchCategory || function() {};
-window.switchQuarter = window.switchQuarter || function() {};
-window.toggleEditMode = window.toggleEditMode || function() {};
-window.addNewRow = window.addNewRow || function() {};
-window.deleteRow = window.deleteRow || function() {};
-window.toggleSubmitted = window.toggleSubmitted || function() {};
-window.updateRowField = window.updateRowField || function() {};
-
-// Expose scoresheet.js functions for grade management
-window.openGradeStudentsView = scoresheetModule.openGradeStudentsView || function() {};
-window.saveStudentGrades = window.saveStudentGrades || scoresheetModule.saveStudentGrades || function() { console.error('saveStudentGrades not available'); };
-window.openScoreSheetEditMode = scoresheetModule.openScoreSheetEditMode || function() {};
+window.changeWrittenWorksQuarter = window.changeWrittenWorksQuarter || function() {};
+window.toggleWrittenWorksEditMode = window.toggleWrittenWorksEditMode || function() {};
+window.updateWrittenWorksField = window.updateWrittenWorksField || function() {};
+window.deleteWrittenWorksRow = window.deleteWrittenWorksRow || function() {};
 
 /**
  * Request notification permission for pending tasks alerts
@@ -256,6 +243,15 @@ window.checkLoginStatus = function() {
         
         await initializeApp();
         console.log("✓ Initialization complete");
+        
+        // Run data migration to add dateGiven field to existing items
+        if (typeof window.migrateAllStudentsData === 'function') {
+            try {
+                window.migrateAllStudentsData();
+            } catch (e) {
+                console.error('Migration error:', e);
+            }
+        }
         
         // Request notification permission for pending tasks alerts
         if ('Notification' in window && Notification.permission === 'default') {

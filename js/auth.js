@@ -53,6 +53,9 @@ export function setupLoginFormListeners() {
 
 export function handleLogout() {
     console.log("🔴 LOGOUT INITIATED");
+
+    // Blank out navigation history so back button can't return to previous user pages
+    import('./global.js').then(module => module.clearNavigationHistory());
     
     // 1. Clear user state
     setCurrentUser(null);
@@ -144,6 +147,7 @@ export function renderProfileView() {
 function _renderProfileViewContent() {
     const currentUser = getCurrentUser();
     const currentStudentId = getCurrentStudentId();
+    const userRole = userAccounts[currentUser]?.role || 'student';
     
     document.querySelector('.view-title').textContent = "Profile Settings";
     appContainer.innerHTML = '';
@@ -153,10 +157,18 @@ function _renderProfileViewContent() {
         document.getElementById('profile-view').content.cloneNode(true)
     );
     
+    // Hide "Change Profile" button for admins
+    if (userRole === 'admin') {
+        const changeProfileBtn = document.querySelector('[onclick="openChangeProfile()"]');
+        if (changeProfileBtn) {
+            changeProfileBtn.style.display = 'none';
+        }
+    }
+    
     // 2. Set the Name (UPDATED: Checks for real name first)
     const nameDisplay = document.getElementById('profile-name-display');
     
-    if (userAccounts[currentUser].role === 'student') {
+    if (userRole === 'student') {
         const studentData = getStudentData(currentStudentId);
         // If we find a real name (like 'Aaron Adan'), use it. Else use username.
         if (studentData && studentData.name) {
@@ -173,11 +185,16 @@ function _renderProfileViewContent() {
     const bigProfilePic = document.getElementById('big-profile-pic');
     
     if (bigProfilePic) {
-        if (userAccounts[currentUser].role === 'student') {
+        if (userRole === 'student') {
             const studentData = getStudentData(currentStudentId);
             bigProfilePic.src = (studentData && studentData.img) ? studentData.img : 'images/default.svg';
-        } 
+        }
+        else if (userRole === 'admin') {
+            // Admins always use default.svg
+            bigProfilePic.src = 'images/default.svg';
+        }
         else {
+            // Teachers use their custom image if set, otherwise default.svg
             bigProfilePic.src = userAccounts[currentUser].img || 'images/default.svg';
         }
     }
@@ -250,6 +267,16 @@ export function validateAndChangePassword() {
 }
 
 export function openChangeProfile() {
+    const currentUser = getCurrentUser();
+    const userRole = userAccounts[currentUser]?.role || 'student';
+    
+    // Prevent admins from changing profile
+    if (userRole === 'admin') {
+        const Toast = window.showErrorToast || console.log;
+        if (Toast) Toast("❌ Admins cannot change their profile picture.");
+        return;
+    }
+    
     // Track navigation so back button works
     pushNavigation('Update Photo', openChangeProfile);
     
@@ -259,7 +286,8 @@ export function openChangeProfile() {
     // Load the current user's profile image and render the icon picker
     const previewPic = document.getElementById('preview-pic');
     const picker = document.getElementById('icon-picker');
-    const currentUser = getCurrentUser();
+    const iconFolder = userRole === 'student' ? 'students' : 'teachers';
+    
     let currentImg = 'images/default.svg';
     if (currentUser && userAccounts && userAccounts[currentUser]) {
         currentImg = userAccounts[currentUser].img || 'images/default.svg';
@@ -270,11 +298,16 @@ export function openChangeProfile() {
     }
 
     if (picker) {
-        // List of expected icon filenames (5 girls, 5 boys)
-        const icons = [
-            'girl1', 'girl2', 'girl3', 'girl4', 'girl5',
-            'boy1', 'boy2', 'boy3', 'boy4', 'boy5'
-        ];
+        // choose icons based on role
+        let icons = [];
+        if (userRole === 'student') {
+            icons = [
+                'girl1', 'girl2', 'girl3', 'girl4', 'girl5',
+                'boy1', 'boy2', 'boy3', 'boy4', 'boy5'
+            ];
+        } else if (userRole === 'teacher') {
+            icons = ['tg1','tb1'];
+        }
 
         picker.innerHTML = '';
 
@@ -285,30 +318,29 @@ export function openChangeProfile() {
 
             const img = document.createElement('img');
             img.style = 'width:64px; height:64px; border-radius:50%; object-fit:cover;';
-            // Try common extensions (svg, png, webp, jpg)
-            import('./utils.js').then(u => u.setIconSrc(img, name));
+            import('./utils.js').then(u => u.setIconSrc(img, name, iconFolder));
 
             option.appendChild(img);
 
             option.onclick = () => {
-                // Deselect others
                 document.querySelectorAll('#icon-picker .icon-option').forEach(el => el.style.boxShadow = 'none');
                 option.style.boxShadow = '0 0 0 3px var(--au-blue)';
-                // Update preview
                 const previewImg = document.getElementById('selected-icon-preview');
                 if (previewImg) previewImg.src = img.src;
                 option.setAttribute('data-selected-src', img.src);
             };
 
-            // If this icon matches currentImg, mark selected
             if (currentImg && currentImg.includes(name)) {
                 option.style.boxShadow = '0 0 0 3px var(--au-blue)';
-                // also update preview to ensure exact path used
                 const previewImg = document.getElementById('selected-icon-preview');
                 if (previewImg) previewImg.src = img.src;
             }
 
             picker.appendChild(option);
+        });
+
+        import('./utils.js').then(u => {
+            u.applyIconPickerLayout(picker, icons.length);
         });
     }
 }

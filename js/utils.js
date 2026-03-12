@@ -224,22 +224,63 @@ export function getUnique(array, property = null) {
 /**
  * Set an image element's src by trying multiple extensions for a base filename.
  * Attempts extensions in order and falls back to `images/default.svg`.
+ * @param {HTMLImageElement} imgElement - The image element to set src for
+ * @param {string} baseName - The base filename without extension
+ * @param {string} folder - Optional subfolder (e.g., 'students', 'teachers'). If not provided, uses root.
  */
-export function setIconSrc(imgElement, baseName) {
+export function setIconSrc(imgElement, baseName, folder = '') {
     if (!imgElement || !baseName) return;
-    const exts = ['svg', 'png', 'webp', 'jpg', 'jpeg'];
+    const exts = ['jpg', 'jpeg', 'png', 'webp', 'svg'];  // jpg/jpeg first since teacher icons are jpg
     let i = 0;
     function tryNext() {
         if (i >= exts.length) {
             imgElement.onerror = null;
             imgElement.src = 'images/default.svg';
+            console.warn(`⚠️ Could not load icon: ${folder ? folder + '/' : ''}${baseName}`);
             return;
         }
-        const path = `images/profile-icons/${baseName}.${exts[i++]}`;
+        const folderPath = folder ? `${folder}/` : '';
+        const path = `images/profile-icons/${folderPath}${baseName}.${exts[i++]}`;
         imgElement.onerror = tryNext;
         imgElement.src = path;
     }
     tryNext();
+}
+
+/**
+ * Calculate grid template columns based on number of icons
+ * 1 icon: centered (1 column)
+ * 2 icons: 2 columns side by side
+ * 3-4 icons: center with max 2 columns
+ * 5+ icons: 5 columns (repeat pattern)
+ */
+export function getIconGridColumns(iconCount) {
+    if (iconCount === 1) return '1fr';
+    if (iconCount === 2) return 'repeat(2, 1fr)';
+    if (iconCount <= 4) return 'repeat(2, 1fr)';
+    return 'repeat(5, 1fr)';
+}
+
+/**
+ * Apply centering styles to icon picker based on icon count
+ */
+export function applyIconPickerLayout(pickerEl, iconCount) {
+    if (!pickerEl) return;
+    
+    const columns = getIconGridColumns(iconCount);
+    pickerEl.style.gridTemplateColumns = columns;
+    
+    // Adjust max-width and centering based on icon count
+    if (iconCount === 1) {
+        pickerEl.style.maxWidth = '100px';
+        pickerEl.style.margin = '0 auto 16px auto';
+    } else if (iconCount === 2) {
+        pickerEl.style.maxWidth = '220px';
+        pickerEl.style.margin = '0 auto 16px auto';
+    } else if (iconCount <= 4) {
+        pickerEl.style.maxWidth = '220px';
+        pickerEl.style.margin = '0 auto 16px auto';
+    }
 }
 
 /**

@@ -3,7 +3,7 @@
    ========================================= */
 
 import { renderApp } from './app.js';
-import { appContainer, getCurrentUser, getCurrentViewedSubject, goBack, pushNavigation, setCurrentStudentId, setCurrentViewedSubject } from './global.js';
+import { appContainer, getCurrentUser, getCurrentViewedSubject, goBack, pushNavigation, popNavigation, setCurrentStudentId, setCurrentViewedSubject } from './global.js';
 import { clusters, getAvailableGenders, getAvailableSubjects, getClusters, getSubjectGrades, saveAccounts, saveClusters, saveGenders, saveGrades, saveSubjects, userAccounts, getUserAccounts } from './storage.js';
 import { getStudentData } from './utils.js';
 
@@ -22,7 +22,7 @@ let editingLocation = { cluster: '', strand: '', section: '' };
 let tempImageData = "";
 
 // Teacher scoresheet tracking
-let currentCategory = 'concept-notes';
+let currentCategory = 'written-works';
 let currentQuarter = '1st';
 
 // View mode tracking (badge or list view)
@@ -739,6 +739,7 @@ export function updateRecordSectionAndSubjectList() {
 function validateCSVData(data) {
     const validated = [];
     const clusters = getClusters();
+    const usedLRNs = new Set(); // Track LRNs to prevent duplicates
     
     for (let i = 0; i < data.length; i++) {
         const row = data[i];
@@ -757,6 +758,9 @@ function validateCSVData(data) {
         if (!row['gender'] || !row['gender'].trim()) {
             errors.push("Gender is empty");
         }
+        if (!row['lrn'] || !row['lrn'].trim()) {
+            errors.push("LRN (username) is empty");
+        }
         if (!row['cluster'] || !row['cluster'].trim()) {
             errors.push("Cluster is empty");
         }
@@ -768,6 +772,17 @@ function validateCSVData(data) {
         }
         if (!row['subjects'] || !row['subjects'].trim()) {
             errors.push("Subjects are empty");
+        }
+        
+        // Validate LRN is unique in CSV
+        const lrn = row['lrn'] ? row['lrn'].trim() : '';
+        if (lrn && usedLRNs.has(lrn)) {
+            errors.push(`LRN "${lrn}" is duplicated in CSV`);
+        }
+        
+        // Validate LRN doesn't already exist in system
+        if (lrn && userAccounts[lrn.toLowerCase()]) {
+            errors.push(`LRN "${lrn}" already exists in system`);
         }
         
         // Validate cluster/strand/section exist
@@ -801,13 +816,21 @@ function validateCSVData(data) {
             continue;
         }
         
+        // Mark this LRN as used
+        if (lrn) {
+            usedLRNs.add(lrn);
+        }
+        
         // Add validated row
         validated.push({
             'first name': row['first name'].trim(),
             'middle name': row['middle name'] ? row['middle name'].trim() : '',
             'last name': row['last name'].trim(),
             'birthday': formatBirthdayForDB(birthday),
+            'age': row['age'] ? parseInt(row['age']) : null,
             'gender': row['gender'].trim(),
+            'lrn': lrn,
+            'student number': row['student number'] ? row['student number'].trim() : '',
             'cluster': cluster,
             'strand': strand,
             'section': section,
@@ -875,7 +898,10 @@ function showCSVPreviewModal(data) {
             <td style="padding: 10px;" contenteditable="true" onclick="event.stopPropagation()">${row['middle name']}</td>
             <td style="padding: 10px;" contenteditable="true" onclick="event.stopPropagation()">${row['last name']}</td>
             <td style="padding: 10px;" contenteditable="true" onclick="event.stopPropagation()">${row['birthday']}</td>
+            <td style="padding: 10px;" contenteditable="true" onclick="event.stopPropagation()">${row['age'] || ''}</td>
             <td style="padding: 10px;" contenteditable="true" onclick="event.stopPropagation()">${row['gender']}</td>
+            <td style="padding: 10px; font-weight: 600; color: #0a60d6;" contenteditable="true" onclick="event.stopPropagation()">${row['lrn']}</td>
+            <td style="padding: 10px;" contenteditable="true" onclick="event.stopPropagation()">${row['student number']}</td>
             <td style="padding: 10px;" contenteditable="true" onclick="event.stopPropagation()">${row['cluster']}</td>
             <td style="padding: 10px;" contenteditable="true" onclick="event.stopPropagation()">${row['strand']}</td>
             <td style="padding: 10px;" contenteditable="true" onclick="event.stopPropagation()">${row['section']}</td>
@@ -912,14 +938,14 @@ export function confirmCSVImport() {
     // Bulk create accounts
     csvImportData.forEach((row, index) => {
         try {
-            // Generate username and password
-            const username = generateUsername(row['first name'], row['last name'], index);
+            // Use LRN as username
+            const username = row['lrn'].toLowerCase();
             const password = generatePassword();
             
-            // Check if username already exists
-            if (userAccounts[username.toLowerCase()]) {
+            // Check if username already exists (should be rare since we validate in validation step)
+            if (userAccounts[username]) {
                 errorCount++;
-                errors.push(`Row ${index + 1}: Username "${username}" already exists`);
+                errors.push(`Row ${index + 1}: LRN "${row['lrn']}" already exists`);
                 return;
             }
             
@@ -927,7 +953,7 @@ export function confirmCSVImport() {
             const fullName = `${row['first name']} ${row['middle name'] ? row['middle name'] + ' ' : ''}${row['last name']}`.trim();
             const newId = "s_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
             
-            userAccounts[username.toLowerCase()] = {
+            userAccounts[username] = {
                 password: password,
                 role: "student",
                 studentId: newId,
@@ -936,7 +962,9 @@ export function confirmCSVImport() {
                 subjects: row['subjects'],
                 strand: row['strand'],
                 section: row['section'],
-                username: username // Store original username for reference
+                lrn: row['lrn'],
+                studentNumber: row['student number'],
+                username: row['lrn'] // Store LRN as username
             };
             
             // Create student record
@@ -947,7 +975,10 @@ export function confirmCSVImport() {
                 middleName: row['middle name'],
                 lastName: row['last name'],
                 birthday: row['birthday'],
+                age: row['age'],
                 gender: row['gender'],
+                lrn: row['lrn'],
+                studentNumber: row['student number'],
                 img: "images/default.svg",
                 subjects: row['subjects']
             };
@@ -1012,6 +1043,92 @@ function generatePassword() {
         password += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return password;
+}
+
+/**
+ * Trigger the CSV file input dialog
+ */
+export function triggerCSVFileInput() {
+    const fileInput = document.getElementById('csv-file-input');
+    if (fileInput) {
+        fileInput.click();
+    } else {
+        showSuccessToast("❌ File input not found");
+    }
+}
+
+/**
+ * Handle CSV file upload and parsing
+ */
+export function handleCSVFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    
+    // Check file type
+    if (!file.name.endsWith('.csv')) {
+        showSuccessToast("❌ Please select a CSV file");
+        return;
+    }
+    
+    // Read file
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const csv = e.target.result;
+            const rows = csv.trim().split('\n');
+            
+            // Parse header row
+            const headers = rows[0].split(',').map(h => h.trim().toLowerCase());
+            
+            // Validate required columns
+            const requiredColumns = ['first name', 'last name', 'birthday', 'gender', 'lrn', 'cluster', 'strand', 'section', 'subjects'];
+            const missingColumns = requiredColumns.filter(col => !headers.includes(col));
+            
+            if (missingColumns.length > 0) {
+                showSuccessToast(`❌ Missing columns: ${missingColumns.join(', ')}`);
+                return;
+            }
+            
+            // Parse data rows
+            const data = [];
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i].trim();
+                if (!row) continue; // Skip empty rows
+                
+                const values = row.split(',').map(v => v.trim());
+                const dataObj = {};
+                headers.forEach((header, index) => {
+                    dataObj[header] = values[index] || '';
+                });
+                data.push(dataObj);
+            }
+            
+            if (data.length === 0) {
+                showSuccessToast("⚠️ No data found in CSV file");
+                return;
+            }
+            
+            // Validate data
+            const validatedData = validateCSVData(data);
+            
+            if (validatedData.length === 0) {
+                showSuccessToast("❌ No valid student records found. Check your CSV data.");
+                return;
+            }
+            
+            // Store for confirmation and show preview
+            csvImportData = validatedData;
+            showCSVPreviewModal(validatedData);
+            
+        } catch (error) {
+            showSuccessToast(`❌ Error parsing CSV: ${error.message}`);
+            console.error('CSV parsing error:', error);
+        }
+    };
+    reader.readAsText(file);
+    
+    // Reset file input so same file can be selected again
+    event.target.value = '';
 }
 
 /* =========================================
@@ -2450,8 +2567,15 @@ export function openCreateAccountView() {
 
 // OPTION A: Open Student Registration Form
 export function openStudentRegistration() {
+    // If we're switching from teacher form, pop it before pushing student form
+    popNavigation();
+    
     // push navigation stack so back button works
     pushNavigation('Register New Student', openStudentRegistration);
+    
+    // Update header title
+    const titleEl = document.querySelector('.view-title');
+    if(titleEl) titleEl.textContent = "Register New Student";
 
     appContainer.innerHTML = '';
     const template = document.getElementById('create-student-view');
@@ -2465,6 +2589,18 @@ export function openStudentRegistration() {
         setupFormEnterKey('saveStudentAccount');
         initializeSentenceCaseInputs();
         initializeTitleCaseInputs();
+
+        // Show the CSV upload button and set account type selector
+        const csvBtn = document.getElementById('csv-upload-btn');
+        const accountTypeSelect = document.getElementById('admin-account-type-select');
+        
+        if (csvBtn) {
+            csvBtn.style.display = 'inline-block';
+        }
+        
+        if (accountTypeSelect) {
+            accountTypeSelect.value = 'student';
+        }
 
         // Attach listeners to fields that affect the summary
         const summaryFields = [
@@ -2506,7 +2642,14 @@ export function openStudentRegistration() {
 
 // OPTION B: Open Teacher Registration Form
 export function openTeacherRegistration() {
+    // If we're switching from student form, pop it before pushing teacher form
+    popNavigation();
+    
     pushNavigation('Register New Teacher', openTeacherRegistration);
+    
+    // Update header title
+    const titleEl = document.querySelector('.view-title');
+    if(titleEl) titleEl.textContent = "Register New Teacher";
 
     appContainer.innerHTML = '';
     const template = document.getElementById('create-teacher-view');
@@ -2522,6 +2665,18 @@ export function openTeacherRegistration() {
         setupFormEnterKey('saveTeacherAccount');
         initializeSentenceCaseInputs();
         initializeTitleCaseInputs();
+        
+        // Hide the CSV upload button when in teacher registration
+        const csvBtn = document.getElementById('csv-upload-btn');
+        const accountTypeSelect = document.getElementById('admin-account-type-select-teacher');
+        
+        if (csvBtn) {
+            csvBtn.style.display = 'none';
+        }
+        
+        if (accountTypeSelect) {
+            accountTypeSelect.value = 'teacher';
+        }
         
         // Add onchange handlers to update summary
         document.getElementById('t-fname')?.addEventListener('change', updateTeacherCompleteSummary);
@@ -3060,16 +3215,18 @@ export function saveStudentAccount() {
     const cluster = document.getElementById('s-cluster').value;
     const strand = document.getElementById('s-strand').value;
     const section = document.getElementById('s-section').value;
-    const user = document.getElementById('s-username').value.trim();
-    const pass = document.getElementById('s-password').value;
 
-    if (!fname || !lname || !user || !pass || !cluster || !strand || !section) {
-        showSuccessToast("⚠️ Please fill in all required fields.");
+    // Validate required fields
+    if (!fname || !lname || !lrn || !cluster || !strand || !section) {
+        showSuccessToast("⚠️ Please fill in all required fields (Name, LRN, Cluster, Strand, Section).");
         return;
     }
 
+    // Use LRN as username
+    const user = lrn.toLowerCase();
+
     if (userAccounts[user]) {
-        showSuccessToast("⚠️ Username already exists.");
+        showSuccessToast("⚠️ LRN already exists as username.");
         return;
     }
 
@@ -3084,11 +3241,14 @@ export function saveStudentAccount() {
         return;
     }
 
+    // Generate password
+    const pass = generatePassword();
+
     const fullName = `${fname} ${mname ? mname + ' ' : ''}${lname}`;
     const newId = "s_" + Date.now();
 
     // 1. Create Login
-    userAccounts[user.toLowerCase()] = {
+    userAccounts[user] = {
         password: pass,
         role: "student",
         studentId: newId,
@@ -3097,21 +3257,24 @@ export function saveStudentAccount() {
         subjects: selectedSubjects,
         strand: strand,
         section: section,
-        // New fields
         lrn: lrn,
         studentNumber: studentNumber,
-        address: address
+        address: address,
+        username: lrn // Store LRN as username reference
     };
 
     // 2. Create Data Record
     const newStudentObj = {
         id: newId,
         name: fullName,
-        firstName: fname, middleName: mname, lastName: lname,
-        birthday: bday, gender: gender, img: "images/default.svg",
-        subjects: selectedSubjects,
-        // New fields
+        firstName: fname, 
+        middleName: mname, 
+        lastName: lname,
+        birthday: bday, 
         age: age ? parseInt(age) : null,
+        gender: gender, 
+        img: "images/default.svg",
+        subjects: selectedSubjects,
         lrn: lrn,
         studentNumber: studentNumber,
         address: address
@@ -3128,8 +3291,26 @@ export function saveStudentAccount() {
     saveAccounts();
     saveClusters();
     
-    showSuccessToast("✅ Student Account Created Successfully!");
-    openStudentsView(); // Return to main list
+    showSuccessToast(`✅ Student Account Created!\n👤 Username: ${lrn}\n🔑 Password: ${pass}`);
+    
+    // Clear form fields for next account
+    document.getElementById('s-fname').value = '';
+    document.getElementById('s-mname').value = '';
+    document.getElementById('s-lname').value = '';
+    document.getElementById('s-bday').value = '';
+    document.getElementById('s-age').value = '';
+    document.getElementById('s-gender').value = '';
+    document.getElementById('s-lrn').value = '';
+    document.getElementById('s-student-number').value = '';
+    document.getElementById('s-address').value = '';
+    document.getElementById('s-cluster').value = '';
+    document.getElementById('s-strand').value = '';
+    document.getElementById('s-section').value = '';
+    document.getElementById('s-username').value = '';
+    document.getElementById('s-password').value = '';
+    document.querySelectorAll('#s-subjects-list input:checked').forEach(cb => cb.checked = false);
+    document.getElementById('s-subjects-list').innerHTML = '';
+    document.getElementById('student-complete-summary').innerHTML = '<p style="color: #999; margin: 0; font-style: italic;">Fill in all fields above to see complete summary</p>';
 }
 
 // Create new teacher account
@@ -3194,7 +3375,22 @@ export function saveTeacherAccount() {
     saveAccounts();
     
     showSuccessToast("✅ Teacher Account Created Successfully!");
-    openAdminTeacherSelector(); // Return to teacher list
+    
+    // Clear form fields for next account
+    document.getElementById('t-fname').value = '';
+    document.getElementById('t-mname').value = '';
+    document.getElementById('t-lname').value = '';
+    document.getElementById('t-bday').value = '';
+    document.getElementById('t-age').value = '';
+    document.getElementById('t-gender').value = '';
+    document.getElementById('t-address').value = '';
+    document.getElementById('t-cluster').value = '';
+    document.getElementById('t-username').value = '';
+    document.getElementById('t-password').value = '';
+    document.querySelectorAll('#t-subjects-list input:checked').forEach(cb => cb.checked = false);
+    document.getElementById('teacher-strand-sections-container').innerHTML = '';
+    document.getElementById('t-subjects-list').innerHTML = '';
+    document.getElementById('teacher-complete-summary').innerHTML = '<p style="color: #999; margin: 0; font-style: italic;">Fill in all fields above to see complete summary</p>';
 }
 
 
@@ -3660,6 +3856,7 @@ function initRecordTotalsForStudent(studentId, subject, quarter) {
             'concept-notes': 0,
             'activities': 0,
             'quizzes': 0,
+            'performance-tasks': 0,
             'preliminary-exam': 0,
             'departmental-exam': 0
         };
@@ -3737,7 +3934,7 @@ export function openTeacherRecordTable(strand, section, subject, quarter = '1st'
                                 <td colspan="2" style="padding: 12px; text-align: center; border: 1px solid #333;">BOY/GIRLS</td>
                                 <td colspan="3" style="padding: 12px; text-align: center; border: 1px solid #333;">WRITTEN WORKS</td>
                                 <td colspan="1" style="padding: 12px; text-align: center; border: 1px solid #333;">PERFORMANCE TASKS</td>
-                                <td colspan="2" style="padding: 12px; text-align: center; border: 1px solid #333;">EXAMINATION</td>
+                                <td colspan="2" style="padding: 12px; text-align: center; border: 1px solid #333;">QUARTERLY ASSESSMENT</td>
                             </tr>
                             <!-- Header Row 2: Sub-categories -->
                             <tr style="background: #0052cc; color: white; font-weight: 600;">
@@ -3747,8 +3944,8 @@ export function openTeacherRecordTable(strand, section, subject, quarter = '1st'
                                 <td style="padding: 10px; text-align: center; border: 1px solid #333; font-size: 0.85rem;">Activities</td>
                                 <td style="padding: 10px; text-align: center; border: 1px solid #333; font-size: 0.85rem;">Quizzes</td>
                                 <td style="padding: 10px; text-align: center; border: 1px solid #333;">Tasks</td>
-                                <td style="padding: 10px; text-align: center; border: 1px solid #333; font-size: 0.85rem;">Preliminary Exam</td>
-                                <td style="padding: 10px; text-align: center; border: 1px solid #333; font-size: 0.85rem;">Department Exam</td>
+                                <td style="padding: 10px; text-align: center; border: 1px solid #333; font-size: 0.85rem;">Preliminary Examination</td>
+                                <td style="padding: 10px; text-align: center; border: 1px solid #333; font-size: 0.85rem;">Departmental Examination</td>
                             </tr>
                         </thead>
                         <!-- Data Rows -->
@@ -4674,20 +4871,28 @@ export function renderStudentScoresheet(subjectName, quarter = "1st", selectedCa
     
     // Set current viewing context
     setCurrentViewedSubject(subjectName);
-    currentCategory = selectedCategory || 'concept-notes';
-    currentQuarter = quarter;
 
     // Initialize student grades for this subject if not exists
     initTeacherGradesStructure(currentStudentId, subjectName);
 
     // Define all categories
     const categories = [
-        { id: 'concept-notes', name: 'Concept Notes', icon: 'fa-lightbulb', maxScore: 10 },
-        { id: 'activities', name: 'Activities', icon: 'fa-tasks', maxScore: 100 },
-        { id: 'quizzes', name: 'Quizzes', icon: 'fa-question-circle', maxScore: 100 },
-        { id: 'preliminary-exam', name: 'Preliminary Examination', icon: 'fa-file-alt', maxScore: 50 },
-        { id: 'departmental-exam', name: 'Departmental Examination', icon: 'fa-file-alt', maxScore: 50 }
+        { id: 'written-works', name: 'Written Works', icon: 'fa-book', maxScore: 100 },
+        { id: 'performance-tasks', name: 'Performance Tasks', icon: 'fa-users', maxScore: 100 },
+        { id: 'quarterly-assessment', name: 'Quarterly Assessment', icon: 'fa-file-alt', maxScore: 100 }
     ];
+
+    // resolve currentCategory
+    function findCategoryById(id) {
+        return categories.find(cat => cat.id === id) || null;
+    }
+    currentCategory = selectedCategory || 'written-works';
+    currentQuarter = quarter;
+    
+    // Validate category exists, fallback to first if not
+    if (!findCategoryById(currentCategory) && categories.length > 0) {
+        currentCategory = categories[0].id;
+    }
 
     // Build the scoresheet page
     appContainer.innerHTML = `
@@ -4737,11 +4942,19 @@ export function renderStudentScoresheet(subjectName, quarter = "1st", selectedCa
         };
     }
 
-    // Find the selected category
-    const selectedCategoryObj = categories.find(cat => cat.id === currentCategory);
-    
-    // Render only the selected category
+    // Find the selected category object
+    let selectedCategoryObj = findCategoryById(currentCategory);
+    if (!selectedCategoryObj) {
+        console.warn('[🎓 Student Scoresheet] category not found, defaulting to first item.');
+        if (categories.length > 0) {
+            currentCategory = categories[0].id;
+            selectedCategoryObj = categories[0];
+        }
+    }
+
+    // Render the selected category
     const contentContainer = document.getElementById('scoresheet-content');
+    
     const categoryDiv = renderStudentCategorySection(subjectName, quarter, selectedCategoryObj);
     contentContainer.appendChild(categoryDiv);
 }
@@ -4749,7 +4962,153 @@ export function renderStudentScoresheet(subjectName, quarter = "1st", selectedCa
 /**
  * Render a single category section with its table (student view - read-only)
  */
+
+/**
+ * Render Written Works category as 3 collapsible sub-sections for STUDENTS (read-only view)
+ */
+function renderWrittenWorksStudentSection(subjectName, quarter) {
+    const currentStudentId = getCurrentStudentId();
+    const sg = getSubjectGrades();
+    
+    // Define the 3 Written Works sub-categories
+    const subCategories = [
+        { id: 'concept-note', name: 'Concept Notes', icon: 'fa-bookmark', maxScore: 10 },
+        { id: 'activities', name: 'Activities', icon: 'fa-tasks', maxScore: 10 },
+        { id: 'quiz', name: 'Quizzes', icon: 'fa-question-circle', maxScore: 60 }
+    ];
+    
+    const mainDiv = document.createElement('div');
+    mainDiv.style.cssText = 'display: flex; flex-direction: column; gap: 12px;';
+    
+    // Render each sub-section as a collapsible accordion
+    subCategories.forEach(subCat => {
+        const items = (sg[currentStudentId]?.[subjectName]?.[quarter]?.[subCat.id]) || [];
+        const isExpanded = items.length > 0; // Expand by default if has items
+        const itemCount = items.length;
+        
+        // Create section container
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'ww-subsection';
+        sectionDiv.style.cssText = 'border: 1px solid #e0e0e0; border-radius: 8px; overflow: visible; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.08);';
+        
+        // Create header
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'ww-subsection-header';
+        headerDiv.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #f8f9fa; cursor: pointer; border-bottom: 1px solid #e0e0e0; transition: all 0.3s; user-select: none;';
+        headerDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                <i class="fas fa-chevron-down ww-toggle-icon" style="color: #666; font-size: 1rem; transition: transform 0.3s; transform: ${isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)'}"></i>
+                <i class="fas ${subCat.icon}" style="font-size: 1.3rem; color: var(--au-blue);"></i>
+                <h3 style="margin: 0; color: #333; font-size: 1.05rem; font-weight: 700;">${subCat.name}</h3>
+                <span style="font-size: 0.85rem; color: #666; background: #e8e8e8; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">${itemCount} item${itemCount !== 1 ? 's' : ''}</span>
+            </div>
+        `;
+        
+        // Toggle expand/collapse
+        headerDiv.onclick = function() {
+            const contentDiv = sectionDiv.querySelector('.ww-subsection-content');
+            const icon = headerDiv.querySelector('.ww-toggle-icon');
+            const isVisible = contentDiv.style.display !== 'none';
+            contentDiv.style.display = isVisible ? 'none' : 'block';
+            icon.style.transform = isVisible ? 'rotate(-90deg)' : 'rotate(0deg)';
+        };
+        
+        sectionDiv.appendChild(headerDiv);
+        
+        // Create content div (initially hidden if no items)
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'ww-subsection-content';
+        contentDiv.style.cssText = `display: ${isExpanded ? 'block' : 'none'}; padding: 0;`;
+        
+        // Create table
+        const tableDiv = document.createElement('div');
+        tableDiv.style.cssText = 'overflow-x: auto;';
+        
+        if (items.length === 0) {
+            tableDiv.innerHTML = `
+                <p style="color: #999; text-align: center; padding: 30px; margin: 0;">
+                    <i class="fas fa-inbox"></i> No items posted yet.
+                </p>
+            `;
+        } else {
+            let tableHTML = `
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; width: 80px;">Item #</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; flex: 1; min-width: 150px;">Title</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 100px;">Score</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 120px;">Date Posted</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 120px;">Deadline</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 100px;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            const categoryPrefix = subCat.name.split(' ')[0].charAt(0).toUpperCase();
+            
+            items.forEach((item, idx) => {
+                const itemNum = idx + 1;
+                const status = getTeacherItemStatus(item);
+                let statusColor = '#6c757d';
+                let statusLabel = 'Pending';
+                
+                if (status === 'green') {
+                    statusColor = '#28a745';
+                    statusLabel = '✓ Completed';
+                } else if (status === 'red') {
+                    statusColor = '#dc3545';
+                    statusLabel = '✗ Overdue';
+                }
+                
+                // Format dates for display
+                const datePosted = item.datePosted ? new Date(item.datePosted).toLocaleDateString() : '—';
+                const deadline = item.deadline ? new Date(item.deadline).toLocaleDateString() : '—';
+                
+                tableHTML += `
+                    <tr style="border-bottom: 1px solid #eee; transition: all 0.2s;" onmouseover="this.style.backgroundColor='#f9f9f9'" onmouseout="this.style.backgroundColor='white'">
+                        <td style="padding: 12px; text-align: left; font-weight: 600; color: var(--au-blue);">${categoryPrefix}${itemNum}</td>
+                        <td style="padding: 12px; text-align: left; color: #333;">${item.title || '(No title)'}</td>
+                        <td style="padding: 12px; text-align: center; font-weight: 600;">
+                            <span style="color: var(--au-blue);">${item.score || 0}</span>
+                            <span style="color: #999; font-size: 0.8rem;"> / ${subCat.maxScore}</span>
+                        </td>
+                        <td style="padding: 12px; text-align: center; color: #666;">${datePosted}</td>
+                        <td style="padding: 12px; text-align: center; color: #666;">${deadline}</td>
+                        <td style="padding: 12px; text-align: center;">
+                            <div style="display: inline-block; padding: 6px 12px; border-radius: 20px; background: ${statusColor}; color: white; font-weight: 600; font-size: 0.85rem; text-align: center;">
+                                ${statusLabel}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            tableDiv.innerHTML = tableHTML;
+        }
+        
+        contentDiv.appendChild(tableDiv);
+        sectionDiv.appendChild(contentDiv);
+        mainDiv.appendChild(sectionDiv);
+    });
+    
+    return mainDiv;
+}
+
+/**
+ * Render a single category section for students (read-only view)
+ */
 function renderStudentCategorySection(subjectName, quarter, category) {
+    // Special handling for Written Works - render as 3 collapsible sub-sections
+    if (category.id === 'written-works') {
+        return renderWrittenWorksStudentSection(subjectName, quarter);
+    }
+
     const currentStudentId = getCurrentStudentId();
     const sg = getSubjectGrades();
     const items = (sg[currentStudentId]?.[subjectName]?.[quarter]?.[category.id]) || [];
@@ -4915,20 +5274,28 @@ export function renderTeacherScoresheet(subjectName, quarter = "1st", selectedCa
         
         // Set current viewing context
         setCurrentViewedSubject(subjectName);
-        currentCategory = selectedCategory || 'concept-notes';
-        currentQuarter = quarter;
 
         // Initialize student grades for this subject if not exists
         initTeacherGradesStructure(currentStudentId, subjectName);
 
         // Define all categories
         const categories = [
-            { id: 'concept-notes', name: 'Concept Notes', icon: 'fa-lightbulb', maxScore: 10 },
-            { id: 'activities', name: 'Activities', icon: 'fa-tasks', maxScore: 100 },
-            { id: 'quizzes', name: 'Quizzes', icon: 'fa-question-circle', maxScore: 100 },
-            { id: 'preliminary-exam', name: 'Preliminary Examination', icon: 'fa-file-alt', maxScore: 50 },
-            { id: 'departmental-exam', name: 'Departmental Examination', icon: 'fa-file-alt', maxScore: 50 }
+            { id: 'written-works', name: 'Written Works', icon: 'fa-book', maxScore: 100 },
+            { id: 'performance-tasks', name: 'Performance Tasks', icon: 'fa-users', maxScore: 100 },
+            { id: 'quarterly-assessment', name: 'Quarterly Assessment', icon: 'fa-file-alt', maxScore: 100 }
         ];
+
+        // resolve currentCategory
+        function findCategoryById(id) {
+            return categories.find(cat => cat.id === id) || null;
+        }
+        currentCategory = selectedCategory || 'written-works';
+    currentQuarter = quarter;
+    
+    // Validate category exists, fallback to first if not
+    if (!findCategoryById(currentCategory) && categories.length > 0) {
+        currentCategory = categories[0].id;
+    }
 
         // Build the scoresheet page with teacher toolbar
         const html = `
@@ -4947,9 +5314,9 @@ export function renderTeacherScoresheet(subjectName, quarter = "1st", selectedCa
                         </div>
                         <div class="dropdown">
                             <button class="nav-pill" id="categoryBtn">Categories <i class="fas fa-chevron-down"></i></button>
-                            <div class="dropdown-content">
-                                ${categories.map(cat => `<button onclick="renderTeacherScoresheet('${subjectName}', '${quarter}', '${cat.id}')">${cat.name}</button>`).join('')}
-                            </div>
+                        <div class="dropdown-content">
+                            ${categories.map(cat => `<button onclick="renderTeacherScoresheet('${subjectName}', '${quarter}', '${cat.id}')">${cat.name}</button>`).join('')}
+                        </div>
                         </div>
                     </div>
 
@@ -4993,16 +5360,26 @@ export function renderTeacherScoresheet(subjectName, quarter = "1st", selectedCa
             };
         }
 
-        // Find the selected category
-        const selectedCategoryObj = categories.find(cat => cat.id === currentCategory);
-        
-        // Render only the selected category
+        // Find the selected category object (could be parent or subcategory)
+        const selectedCategoryObj = findCategoryById(currentCategory);
+        if (!selectedCategoryObj) {
+            console.warn('[🎓 Teacher Scoresheet] category not found, defaulting to first item.');
+            // fallback to first available leaf or category
+            if (categories.length > 0) {
+                const first = categories[0].subcategories ? categories[0].subcategories[0] : categories[0];
+                currentCategory = first.id;
+                selectedCategoryObj = first;
+            }
+        }
+
+        // Render the selected category or all its children if it's a parent
         const contentContainer = document.getElementById('scoresheet-content');
         if (!contentContainer) {
             console.error('[🎓 Teacher Scoresheet] scoresheet-content container not found!');
             return;
         }
         
+        // Render the selected category
         const categoryDiv = renderTeacherCategorySection(subjectName, quarter, selectedCategoryObj);
         contentContainer.appendChild(categoryDiv);
         console.log('[🎓 Teacher Scoresheet] ✅ Teacher scoresheet fully loaded for:', student.name, 'Subject:', subjectName);
@@ -5036,7 +5413,7 @@ function initTeacherGradesStructure(studentId, subjectName) {
         if (!sg[studentId][subjectName][q]) {
             sg[studentId][subjectName][q] = {};
         }
-        ['concept-notes', 'activities', 'quizzes', 'preliminary-exam', 'departmental-exam'].forEach(cat => {
+        ['concept-notes', 'activities', 'quizzes', 'performance-tasks', 'preliminary-exam', 'departmental-exam'].forEach(cat => {
             if (!sg[studentId][subjectName][q][cat]) {
                 sg[studentId][subjectName][q][cat] = [];
             }
@@ -5047,9 +5424,218 @@ function initTeacherGradesStructure(studentId, subjectName) {
 }
 
 /**
- * Render a single category section with its table
+ * Render Written Works category as 3 collapsible sub-sections (Concept Notes, Activities, Quizzes)
+ * This replaces the single table with an accordion-style layout
+ */
+function renderWrittenWorksTeacherSection(subjectName, quarter) {
+    const currentStudentId = getCurrentStudentId();
+    const sg = getSubjectGrades();
+    
+    // Define the 3 Written Works sub-categories
+    const subCategories = [
+        { id: 'concept-note', name: 'Concept Notes', icon: 'fa-bookmark', maxScore: 10 },
+        { id: 'activities', name: 'Activities', icon: 'fa-tasks', maxScore: 10 },
+        { id: 'quiz', name: 'Quizzes', icon: 'fa-question-circle', maxScore: 60 }
+    ];
+    
+    const mainDiv = document.createElement('div');
+    mainDiv.style.cssText = 'display: flex; flex-direction: column; gap: 12px;';
+    
+    // Render each sub-section as a collapsible accordion
+    subCategories.forEach(subCat => {
+        const items = (sg[currentStudentId]?.[subjectName]?.[quarter]?.[subCat.id]) || [];
+        const isExpanded = items.length > 0; // Expand by default if has items
+        const itemCount = items.length;
+        
+        // Create section container
+        const sectionDiv = document.createElement('div');
+        sectionDiv.className = 'ww-subsection';
+        sectionDiv.style.cssText = 'border: 1px solid #e0e0e0; border-radius: 8px; overflow: visible; background: white; box-shadow: 0 2px 8px rgba(0,0,0,0.08);';
+        
+        // Create header
+        const headerDiv = document.createElement('div');
+        headerDiv.className = 'ww-subsection-header';
+        headerDiv.style.cssText = 'display: flex; align-items: center; justify-content: space-between; padding: 16px; background: #f8f9fa; cursor: pointer; border-bottom: 1px solid #e0e0e0; transition: all 0.3s; user-select: none;';
+        headerDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px; flex: 1;">
+                <i class="fas fa-chevron-down ww-toggle-icon" style="color: #666; font-size: 1rem; transition: transform 0.3s; transform: ${isExpanded ? 'rotate(0deg)' : 'rotate(-90deg)'}"></i>
+                <i class="fas ${subCat.icon}" style="font-size: 1.3rem; color: var(--au-blue);"></i>
+                <h3 style="margin: 0; color: #333; font-size: 1.05rem; font-weight: 700;">${subCat.name}</h3>
+                <span style="font-size: 0.85rem; color: #666; background: #e8e8e8; padding: 2px 8px; border-radius: 12px; margin-left: 8px;">${itemCount} item${itemCount !== 1 ? 's' : ''}</span>
+            </div>
+        `;
+        
+        // Toggle expand/collapse
+        headerDiv.onclick = function() {
+            const contentDiv = sectionDiv.querySelector('.ww-subsection-content');
+            const icon = headerDiv.querySelector('.ww-toggle-icon');
+            const isVisible = contentDiv.style.display !== 'none';
+            contentDiv.style.display = isVisible ? 'none' : 'block';
+            icon.style.transform = isVisible ? 'rotate(-90deg)' : 'rotate(0deg)';
+        };
+        
+        sectionDiv.appendChild(headerDiv);
+        
+        // Create content div (initially hidden if no items)
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'ww-subsection-content';
+        contentDiv.style.cssText = `display: ${isExpanded ? 'block' : 'none'}; padding: 0;`;
+        
+        // Add controls bar
+        const controlsDiv = document.createElement('div');
+        controlsDiv.style.cssText = 'padding: 12px 16px; background: #f8f9fa; border-bottom: 1px solid #e0e0e0; display: flex; gap: 10px; align-items: center;';
+        controlsDiv.innerHTML = `
+            <button onclick="addTeacherScoreItem('${subjectName}', '${quarter}', '${subCat.id}')" style="padding: 6px 12px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.9rem; font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                <i class="fas fa-plus"></i> Add Row
+            </button>
+        `;
+        contentDiv.appendChild(controlsDiv);
+        
+        // Create table
+        const tableDiv = document.createElement('div');
+        tableDiv.style.cssText = 'overflow-x: auto;';
+        
+        if (items.length === 0) {
+            tableDiv.innerHTML = `
+                <p style="color: #999; text-align: center; padding: 30px; margin: 0;">
+                    <i class="fas fa-inbox"></i> No items yet.
+                </p>
+            `;
+        } else {
+            let tableHTML = `
+                <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                    <thead>
+                        <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 40px;" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; width: 80px;">Item #</th>
+                            <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; flex: 1; min-width: 150px;">Title</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 100px;">Score</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 120px;">Date Posted</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 120px;">Deadline</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 100px;">Status</th>
+                            <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 150px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            items.forEach((item, idx) => {
+                const itemNum = idx + 1;
+                const status = getTeacherItemStatus(item);
+                let statusColor = '#6c757d';
+                let statusLabel = 'Pending';
+                
+                if (status === 'green') {
+                    statusColor = '#28a745';
+                    statusLabel = '✓ Completed';
+                } else if (status === 'red') {
+                    statusColor = '#dc3545';
+                    statusLabel = '✗ Overdue';
+                }
+                
+                const isFirst = idx === 0;
+                const isLast = idx === items.length - 1;
+                const categoryPrefix = subCat.name.split(' ')[0].charAt(0).toUpperCase();
+                
+                tableHTML += `
+                    <tr style="border-bottom: 1px solid #eee; transition: all 0.2s;" draggable="true" 
+                        ondragstart="handleTeacherItemDragStart(event, '${subjectName}', '${quarter}', '${subCat.id}', ${idx})"
+                        ondragover="handleTeacherItemDragOver(event)" 
+                        ondrop="handleTeacherItemDrop(event, '${subjectName}', '${quarter}', '${subCat.id}', ${idx})"
+                        ondragend="handleTeacherItemDragEnd(event)"
+                        onmouseover="this.style.backgroundColor='#f9f9f9'" 
+                        onmouseout="this.style.backgroundColor='white'"
+                        class="teacher-item-row">
+                        
+                        <td style="padding: 12px; text-align: center; color: #999; cursor: move;" title="Drag to reorder">
+                            <i class="fas fa-grip-vertical" style="cursor: move;"></i>
+                        </td>
+                        
+                        <td style="padding: 12px; text-align: left; font-weight: 600; color: var(--au-blue); teacher-item-num">${categoryPrefix}${itemNum}</td>
+                        
+                        <td style="padding: 12px; text-align: left;">
+                            <input type="text" value="${item.title || ''}" 
+                                onchange="updateTeacherItem('${subjectName}', '${quarter}', '${subCat.id}', ${idx}, 'title', this.value)"
+                                placeholder="Enter title..."
+                                style="width: 90%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;">
+                        </td>
+                        
+                        <td style="padding: 12px; text-align: center;">
+                            <input type="number" value="${item.score || 0}" min="0" max="${subCat.maxScore}"
+                                onchange="updateTeacherItem('${subjectName}', '${quarter}', '${subCat.id}', ${idx}, 'score', this.value, ${subCat.maxScore})"
+                                style="width: 70px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; text-align: center; font-size: 0.9rem;">
+                            <span style="color: #999; font-size: 0.8rem; margin-left: 5px;">/ ${subCat.maxScore}</span>
+                        </td>
+                        
+                        <td style="padding: 12px; text-align: center;">
+                            <input type="date" value="${item.datePosted || ''}"
+                                onchange="updateTeacherItem('${subjectName}', '${quarter}', '${subCat.id}', ${idx}, 'datePosted', this.value)"
+                                style="width: 110px; padding: 6px 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;">
+                        </td>
+                        
+                        <td style="padding: 12px; text-align: center;">
+                            <input type="date" value="${item.deadline || ''}"
+                                onchange="updateTeacherItem('${subjectName}', '${quarter}', '${subCat.id}', ${idx}, 'deadline', this.value)"
+                                style="width: 110px; padding: 6px 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;">
+                        </td>
+                        
+                        <td style="padding: 12px; text-align: center;">
+                            <div style="display: inline-block; padding: 6px 12px; border-radius: 20px; background: ${statusColor}; color: white; font-weight: 600; font-size: 0.85rem; text-align: center;">
+                                ${statusLabel}
+                            </div>
+                        </td>
+                        
+                        <td style="padding: 12px; text-align: center;">
+                            <div style="display: flex; gap: 4px; justify-content: center;">
+                                <button onclick="moveTeacherItemUp('${subjectName}', '${quarter}', '${subCat.id}', ${idx})" 
+                                    ${isFirst ? 'disabled' : ''} 
+                                    style="padding: 4px 6px; background: ${isFirst ? '#d0d0d0' : '#007bff'}; color: white; border: none; border-radius: 4px; cursor: ${isFirst ? 'not-allowed' : 'pointer'}; font-size: 0.8rem; opacity: ${isFirst ? '0.5' : '1'};" 
+                                    title="Move up">
+                                    <i class="fas fa-arrow-up"></i>
+                                </button>
+                                
+                                <button onclick="moveTeacherItemDown('${subjectName}', '${quarter}', '${subCat.id}', ${idx})" 
+                                    ${isLast ? 'disabled' : ''} 
+                                    style="padding: 4px 6px; background: ${isLast ? '#d0d0d0' : '#28a745'}; color: white; border: none; border-radius: 4px; cursor: ${isLast ? 'not-allowed' : 'pointer'}; font-size: 0.8rem; opacity: ${isLast ? '0.5' : '1'};" 
+                                    title="Move down">
+                                    <i class="fas fa-arrow-down"></i>
+                                </button>
+                                
+                                <button onclick="deleteTeacherScoreItemWithConfirmation('${subjectName}', '${quarter}', '${subCat.id}', ${idx})"
+                                    style="padding: 4px 6px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;"
+                                    title="Delete item">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+            
+            tableHTML += `
+                    </tbody>
+                </table>
+            `;
+            tableDiv.innerHTML = tableHTML;
+        }
+        
+        contentDiv.appendChild(tableDiv);
+        sectionDiv.appendChild(contentDiv);
+        mainDiv.appendChild(sectionDiv);
+    });
+    
+    return mainDiv;
+}
+
+/**
+ * Render a single category section for teachers (edit-enabled view)
  */
 function renderTeacherCategorySection(subjectName, quarter, category) {
+    // Special handling for Written Works - render as 3 collapsible sub-sections
+    if (category.id === 'written-works') {
+        return renderWrittenWorksTeacherSection(subjectName, quarter);
+    }
+
     const currentStudentId = getCurrentStudentId();
     const sg = getSubjectGrades();
     const items = (sg[currentStudentId]?.[subjectName]?.[quarter]?.[category.id]) || [];
@@ -5057,6 +5643,173 @@ function renderTeacherCategorySection(subjectName, quarter, category) {
     // Get max score for this category
     const maxScore = category.maxScore || 10;
 
+    const sectionDiv = document.createElement('div');
+    sectionDiv.className = 'shadow-card';
+    sectionDiv.style.cssText = 'padding: 20px; border-radius: 8px; background: white;';
+
+    // Category header
+    const headerDiv = document.createElement('div');
+    headerDiv.style.cssText = 'display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid var(--au-blue); padding-bottom: 15px;';
+    headerDiv.innerHTML = `
+        <div>
+            <h3 style="margin: 0; color: var(--au-blue);"><i class="fas ${category.icon}"></i> ${category.name}</h3>
+            <p style="margin: 8px 0 0 0; font-size: 0.85rem; color: #666;">Max Score: ${maxScore} points</p>
+        </div>
+        <button class="nav-pill" onclick="addTeacherScoreItem('${subjectName}', '${quarter}', '${category.id}')">
+            <i class="fas fa-plus"></i> Add Item
+        </button>
+    `;
+    sectionDiv.appendChild(headerDiv);
+
+    // Table
+    const tableDiv = document.createElement('div');
+    tableDiv.style.cssText = 'overflow-x: auto;';
+
+    if (items.length === 0) {
+        tableDiv.innerHTML = `
+            <p style="color: #999; text-align: center; padding: 30px; margin: 0;">
+                <i class="fas fa-inbox"></i> No items yet. Click "Add Item" to get started.
+            </p>
+        `;
+    } else {
+        let tableHTML = `
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.9rem;">
+                <thead>
+                    <tr style="background: #f5f5f5; border-bottom: 2px solid #ddd;">
+                        <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 40px;" title="Drag to reorder"><i class="fas fa-grip-vertical"></i></th>
+                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; width: 80px;">Item #</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 600; color: #333; flex: 1; min-width: 150px;">Title</th>
+                        <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 100px;">Score</th>
+                        <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 120px;">Date Posted</th>
+                        <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 120px;">Deadline</th>
+                        <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 100px;">Status</th>
+                        <th style="padding: 12px; text-align: center; font-weight: 600; color: #333; width: 150px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+
+        items.forEach((item, idx) => {
+            const itemNum = idx + 1;
+            const status = getTeacherItemStatus(item);
+            let statusColor = '#6c757d'; // Default grey for pending
+            let statusLabel = 'Pending';
+            let statusIcon = '○';
+            
+            if (status === 'green') {
+                statusColor = '#28a745';
+                statusLabel = '✓ Completed';
+                statusIcon = '✓';
+            } else if (status === 'red') {
+                statusColor = '#dc3545';
+                statusLabel = '✗ Overdue';
+                statusIcon = '✗';
+            }
+
+            // Format category prefix for item number
+            const categoryPrefix = category.name.split(' ')[0].charAt(0).toUpperCase();
+            const isFirst = idx === 0;
+            const isLast = idx === items.length - 1;
+
+            tableHTML += `
+                <tr style="border-bottom: 1px solid #eee; transition: all 0.2s;" draggable="true" 
+                    ondragstart="handleTeacherItemDragStart(event, '${subjectName}', '${quarter}', '${category.id}', ${idx})"
+                    ondragover="handleTeacherItemDragOver(event)" 
+                    ondrop="handleTeacherItemDrop(event, '${subjectName}', '${quarter}', '${category.id}', ${idx})"
+                    ondragend="handleTeacherItemDragEnd(event)"
+                    onmouseover="this.style.backgroundColor='#f9f9f9'" 
+                    onmouseout="this.style.backgroundColor='white'"
+                    class="teacher-item-row">
+                    
+                    <!-- Drag Handle -->
+                    <td style="padding: 12px; text-align: center; color: #999; cursor: move;" title="Drag to reorder">
+                        <i class="fas fa-grip-vertical" style="cursor: move;"></i>
+                    </td>
+                    
+                    <!-- Item Number -->
+                    <td style="padding: 12px; text-align: left; font-weight: 600; color: var(--au-blue); teacher-item-num">${categoryPrefix}${itemNum}</td>
+                    
+                    <!-- Title -->
+                    <td style="padding: 12px; text-align: left;">
+                        <input type="text" value="${item.title || ''}" 
+                            onchange="updateTeacherItem('${subjectName}', '${quarter}', '${category.id}', ${idx}, 'title', this.value)"
+                            placeholder="Enter title..."
+                            style="width: 90%; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;">
+                    </td>
+                    
+                    <!-- Score -->
+                    <td style="padding: 12px; text-align: center;">
+                        <input type="number" value="${item.score || 0}" min="0" max="${maxScore}"
+                            onchange="updateTeacherItem('${subjectName}', '${quarter}', '${category.id}', ${idx}, 'score', this.value, ${maxScore})"
+                            style="width: 70px; padding: 6px 8px; border: 1px solid #ddd; border-radius: 4px; text-align: center; font-size: 0.9rem;">
+                        <span style="color: #999; font-size: 0.8rem; margin-left: 5px;">/ ${maxScore}</span>
+                    </td>
+                    
+                    <!-- Date Posted -->
+                    <td style="padding: 12px; text-align: center;">
+                        <input type="date" value="${item.datePosted || ''}"
+                            onchange="updateTeacherItem('${subjectName}', '${quarter}', '${category.id}', ${idx}, 'datePosted', this.value)"
+                            style="width: 110px; padding: 6px 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;">
+                    </td>
+                    
+                    <!-- Deadline -->
+                    <td style="padding: 12px; text-align: center;">
+                        <input type="date" value="${item.deadline || ''}"
+                            onchange="updateTeacherItem('${subjectName}', '${quarter}', '${category.id}', ${idx}, 'deadline', this.value)"
+                            style="width: 110px; padding: 6px 4px; border: 1px solid #ddd; border-radius: 4px; font-size: 0.9rem;">
+                    </td>
+                    
+                    <!-- Status -->
+                    <td style="padding: 12px; text-align: center;">
+                        <div style="display: inline-block; padding: 6px 12px; border-radius: 20px; background: ${statusColor}; color: white; font-weight: 600; font-size: 0.85rem; text-align: center;">
+                            ${statusLabel}
+                        </div>
+                    </td>
+                    
+                    <!-- Actions -->
+                    <td style="padding: 12px; text-align: center;">
+                        <div style="display: flex; gap: 4px; justify-content: center;">
+                            <!-- Move Up -->
+                            <button onclick="moveTeacherItemUp('${subjectName}', '${quarter}', '${category.id}', ${idx})" 
+                                ${isFirst ? 'disabled' : ''} 
+                                style="padding: 4px 6px; background: ${isFirst ? '#d0d0d0' : '#007bff'}; color: white; border: none; border-radius: 4px; cursor: ${isFirst ? 'not-allowed' : 'pointer'}; font-size: 0.8rem; opacity: ${isFirst ? '0.5' : '1'};" 
+                                title="Move up">
+                                <i class="fas fa-arrow-up"></i>
+                            </button>
+                            
+                            <!-- Move Down -->
+                            <button onclick="moveTeacherItemDown('${subjectName}', '${quarter}', '${category.id}', ${idx})" 
+                                ${isLast ? 'disabled' : ''} 
+                                style="padding: 4px 6px; background: ${isLast ? '#d0d0d0' : '#28a745'}; color: white; border: none; border-radius: 4px; cursor: ${isLast ? 'not-allowed' : 'pointer'}; font-size: 0.8rem; opacity: ${isLast ? '0.5' : '1'};" 
+                                title="Move down">
+                                <i class="fas fa-arrow-down"></i>
+                            </button>
+                            
+                            <!-- Delete -->
+                            <button onclick="deleteTeacherScoreItemWithConfirmation('${subjectName}', '${quarter}', '${category.id}', ${idx})"
+                                style="padding: 4px 6px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 0.8rem;"
+                                title="Delete item">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        tableHTML += `
+                </tbody>
+            </table>
+        `;
+        tableDiv.innerHTML = tableHTML;
+    }
+
+    sectionDiv.appendChild(tableDiv);
+    return sectionDiv;
+}
+
+/**
+ * Determine the status of a score item
     const sectionDiv = document.createElement('div');
     sectionDiv.className = 'shadow-card';
     sectionDiv.style.cssText = 'padding: 20px; border-radius: 8px; background: white;';
@@ -5940,6 +6693,24 @@ export function renderSubjectDetails(subjectName, quarter = "1st") {
     }
 
     appContainer.appendChild(templateContent);
+
+    // Add Written Works button to the controls
+    const gradeNav = appContainer.querySelector('.grade-nav');
+    if (gradeNav) {
+        const writtenWorksBtn = document.createElement('button');
+        writtenWorksBtn.className = 'nav-pill';
+        writtenWorksBtn.innerHTML = '<i class="fas fa-book"></i> Written Works';
+        writtenWorksBtn.style.marginLeft = 'auto';
+        writtenWorksBtn.onclick = function(e) {
+            e.preventDefault();
+            const quarter = document.getElementById('quarterBtn') ? 
+                document.getElementById('quarterBtn').innerHTML.split(' ')[0].toLowerCase() : '1st';
+            if (typeof openWrittenWorksView === 'function') {
+                openWrittenWorksView(subjectName, quarter);
+            }
+        };
+        gradeNav.appendChild(writtenWorksBtn);
+    }
 
     // Setup Back Button with proper error handling
     const backBtn = appContainer.querySelector('.nav-pill'); 
@@ -7389,7 +8160,20 @@ export function saveTeacherAddedStudent() {
     saveAccounts();
     
     showSuccessToast("✅ Student Account Created Successfully!");
-    openTeacherStudentSelector();
+    
+    // Clear form fields for next account
+    document.getElementById('ta-fname').value = '';
+    document.getElementById('ta-mname').value = '';
+    document.getElementById('ta-lname').value = '';
+    document.getElementById('ta-bday').value = '';
+    document.getElementById('ta-gender').value = '';
+    document.getElementById('ta-cluster').value = '';
+    document.getElementById('ta-strand').value = '';
+    document.getElementById('ta-section').value = '';
+    document.getElementById('ta-username').value = '';
+    document.getElementById('ta-password').value = '';
+    document.querySelectorAll('#ta-subjects-list input:checked').forEach(cb => cb.checked = false);
+    document.getElementById('teacher-add-student-summary').innerHTML = '<p style="color: #999; margin: 0; font-style: italic;">Fill in all fields above to see complete summary</p>';
 }
 
 // Quick Modal Functions for Admin
@@ -8508,7 +9292,7 @@ export function editStudentProfilePic(studentId, cluster, strand, section) {
             option.style = 'cursor:pointer; padding:6px; border-radius:8px; display:flex; justify-content:center; align-items:center; background:white;';
             const img = document.createElement('img');
             img.style = 'width:64px; height:64px; border-radius:50%; object-fit:cover;';
-            import('./utils.js').then(u => u.setIconSrc(img, name));
+            import('./utils.js').then(u => u.setIconSrc(img, name, 'students'));
             option.appendChild(img);
             option.onclick = () => {
                 // mark selection
@@ -8522,6 +9306,11 @@ export function editStudentProfilePic(studentId, cluster, strand, section) {
                 document.getElementById('preview-pic').src = img.src;
             }
             pickerEl.appendChild(option);
+        });
+        
+        // Apply dynamic layout based on icon count
+        import('./utils.js').then(u => {
+            u.applyIconPickerLayout(pickerEl, icons.length);
         });
     }
 }
@@ -9443,7 +10232,7 @@ export function editTeacherProfilePic(username) {
                     <img id="preview-pic" src="${teacher.img || 'images/default.svg'}" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #f43f5e; margin-bottom: 15px;">
                 </div>
                 <div style="margin-bottom:10px; text-align:center; color:#666;">Choose one of the provided profile icons:</div>
-                <div id="teacher-icon-picker" style="display:grid; grid-template-columns: repeat(5, 1fr); gap:10px; max-width:380px; margin: 0 auto 16px auto;"></div>
+                <div id="teacher-icon-picker" style="display:grid; gap:10px; max-width:380px; margin: 0 auto 16px auto;"></div>
                 
                 <div style="display: flex; gap: 10px;">
                     <button onclick="confirmTeacherProfilePicEdit('${username}')" style="flex: 1; padding: 12px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
@@ -9460,29 +10249,47 @@ export function editTeacherProfilePic(username) {
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     
     // Populate icon picker for teacher
-    const pickerEl = document.getElementById('teacher-icon-picker');
-    if (pickerEl) {
-        const icons = ['girl1','girl2','girl3','girl4','girl5','boy1','boy2','boy3','boy4','boy5'];
-        pickerEl.innerHTML = '';
-        icons.forEach(name => {
-            const option = document.createElement('div');
-            option.style = 'cursor:pointer; padding:6px; border-radius:8px; display:flex; justify-content:center; align-items:center; background:white;';
-            const img = document.createElement('img');
-            img.style = 'width:64px; height:64px; border-radius:50%; object-fit:cover;';
-            import('./utils.js').then(u => u.setIconSrc(img, name));
-            option.appendChild(img);
-            option.onclick = () => {
-                document.querySelectorAll('#teacher-icon-picker div').forEach(el => el.style.boxShadow = 'none');
-                option.style.boxShadow = '0 0 0 3px #f43f5e';
-                document.getElementById('preview-pic').src = img.src;
-            };
-            if (teacher.img && teacher.img.includes(name)) {
-                option.style.boxShadow = '0 0 0 3px #f43f5e';
-                document.getElementById('preview-pic').src = img.src;
-            }
-            pickerEl.appendChild(option);
-        });
-    }
+    import('./utils.js').then(utils => {
+        const pickerEl = document.getElementById('teacher-icon-picker');
+        if (pickerEl) {
+            // Direct icon paths for teacher icons
+            const teacherIcons = [
+                { name: 'tg1', path: 'images/profile-icons/teachers/tg1.jpg' },
+                { name: 'tb1', path: 'images/profile-icons/teachers/tb1.jpg' }
+            ];
+            
+            pickerEl.innerHTML = '';
+            teacherIcons.forEach(icon => {
+                const option = document.createElement('div');
+                option.style = 'cursor:pointer; padding:6px; border-radius:8px; display:flex; justify-content:center; align-items:center; background:white; min-width:80px; min-height:80px;';
+                const img = document.createElement('img');
+                img.style = 'width:64px; height:64px; border-radius:50%; object-fit:cover; display:block;';
+                img.src = icon.path;
+                img.onerror = () => {
+                    console.warn(`⚠️ Failed to load: ${icon.path}`);
+                    img.src = 'images/default.svg';
+                };
+                
+                option.appendChild(img);
+                option.onclick = () => {
+                    document.querySelectorAll('#teacher-icon-picker div').forEach(el => el.style.boxShadow = 'none');
+                    option.style.boxShadow = '0 0 0 3px #f43f5e';
+                    document.getElementById('preview-pic').src = img.src;
+                };
+                
+                if (teacher.img && teacher.img.includes(icon.name)) {
+                    option.style.boxShadow = '0 0 0 3px #f43f5e';
+                    const previewImg = document.getElementById('preview-pic');
+                    if (previewImg) previewImg.src = img.src;
+                }
+                
+                pickerEl.appendChild(option);
+            });
+            
+            // Apply dynamic layout based on icon count
+            utils.applyIconPickerLayout(pickerEl, teacherIcons.length);
+        }
+    });
 }
 
 export function cancelEditTeacherProfilePic() {

@@ -1,1 +1,5 @@
-First Name,Middle Name,Last Name,Birthday,Age,Gender,LRN,Student Number,Address,Cluster,Strand,Section,Subjects
+First Name,Middle Name,Last Name,Birthday,Age,Gender,LRN,Student Number,Cluster,Strand,Section,Subjects
+John,,Smith,1995-05-15,19,Male,123456789,SN001,Senior High School,STEM,11-A,Math;Science;English
+Maria,Grace,Johnson,1996-03-20,18,Female,987654321,SN002,Senior High School,HUMANITIES,11-B,History;Literature;Philosophy
+Carlos,,De La Cruz,1995-08-10,19,Male,456789123,SN003,Senior High School,STEM,11-A,Math;Physics;Chemistry
+Ana,Patricia,Gonzalez,1996-01-25,18,Female,789123456,SN004,Senior High School,BUSINESS,11-C,Business Ethics;Economics;Accounting

@@ -114,10 +114,16 @@ export function renderApp() {
     // 4. Update Header Profile Picture
     const headerIcon = document.getElementById('header-profile-pic');
     if (headerIcon) {
-        if (userAccounts[currentUser].role === 'student') {
+        const userRole = userAccounts[currentUser]?.role || 'student';
+        if (userRole === 'student') {
             const sData = getStudentData(currentStudentId);
             headerIcon.src = sData ? sData.img : 'images/default.svg';
+        } else if (userRole === 'admin') {
+            // Admins always show default.svg in header
+            headerIcon.src = 'images/default.svg';
+            headerIcon.style.display = 'block';
         } else {
+            // Teachers show their custom image or default
             headerIcon.src = userAccounts[currentUser].img || 'images/default.svg';
         }
     }

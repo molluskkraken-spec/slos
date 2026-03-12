@@ -73,8 +73,25 @@ export function setCurrentViewedSubject(subject) {
  * @param {function} pageFunction - Function to call to render this page
  */
 export function pushNavigation(pageName, pageFunction) {
+    // avoid duplicates in the history stack, which can cause the back button to
+    // appear to do nothing (popping to the same page repeatedly.
+    const last = _navigationHistory[_navigationHistory.length - 1];
+    if (last && last.name === pageName && last.func === pageFunction) {
+        console.log("📍 Navigation skip duplicate:", pageName);
+        return;
+    }
+
     _navigationHistory.push({ name: pageName, func: pageFunction });
     console.log("📍 Navigation pushed:", pageName, "| Stack:", _navigationHistory.map(p => p.name));
+}
+
+/**
+ * Completely wipe the navigation history.
+ * Intended for use during logout or when resetting the app state.
+ */
+export function clearNavigationHistory() {
+    _navigationHistory = [];
+    console.log("🗑️ Navigation history cleared");
 }
 
 /**

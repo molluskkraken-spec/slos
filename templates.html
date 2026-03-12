@@ -309,11 +309,14 @@
                 
                 <h2 id="profile-name-display" style="margin: 20px 0;">User</h2>
             </div>
-            <div class="form-container">
+            <!-- center buttons vertically and horizontally so back button lines up under logout -->
+            <div class="form-container" style="display: flex; flex-direction: column; align-items: center;">
                 <button onclick="openChangeProfile()" class="btn-blue-submit" style="margin-bottom: 10px;">Change Profile</button>
                 <button onclick="handleLogout()" class="btn-blue-submit" style="background: #dc3545;">Log out</button>
                 <br><br>
-                <button type="button" onclick="goBack()" class="nav-pill" style="background: none; color: var(--au-blue); border: 1px solid var(--au-blue);"><i class="fas fa-arrow-left"></i> Back</button>
+                <button type="button" onclick="goBack()" class="nav-pill" style="background: none; color: var(--au-blue); border: 1px solid var(--au-blue);">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
             </div>
         </div>
     </div>
@@ -782,11 +785,16 @@
             <button class="nav-pill" onclick="openStudentsView()">
                 <i class="fas fa-arrow-left"></i> Cancel
             </button>
-                <select id="admin-account-type-select" class="au-input" style="min-width:220px; width:auto;" onchange="if(this.value==='teacher'){ openTeacherRegistration(); } else if(this.value==='student'){ openStudentRegistration(); }">
-                    <option value="">Select Account Type</option>
-                    <option value="student">Student Account Registration</option>
-                    <option value="teacher">Teacher Account Registration</option>
+            <div class="account-type-wrapper">
+                <label for="admin-account-type-select" class="account-type-label">
+                    <i class="fas fa-id-card"></i> Account Type:
+                </label>
+                <select id="admin-account-type-select" class="account-type-select" onchange="if(this.value==='teacher'){ openTeacherRegistration(); } else if(this.value==='student'){ openStudentRegistration(); }">
+                    <option value="">Select Account Type...</option>
+                    <option value="student">📚 Student Account Registration</option>
+                    <option value="teacher">👨‍🏫 Teacher Account Registration</option>
                 </select>
+            </div>
         </div>
         
         <div class="selection-container">
@@ -818,11 +826,15 @@
             <button type="button" class="nav-pill" onclick="goBack()">
                 <i class="fas fa-arrow-left"></i> Back
             </button>
-            <select id="admin-account-type-select" class="au-input" style="min-width:220px;" onchange="if(this.value==='teacher'){ openTeacherRegistration(); } else if(this.value==='student'){ openStudentRegistration(); }">
-                <option value="">Select Account Type</option>
-                <option value="student">Student Account Registration</option>
-                <option value="teacher">Teacher Account Registration</option>
-            </select>
+            <div class="account-type-wrapper">
+                <label for="admin-account-type-select" class="account-type-label">
+                    <i class="fas fa-id-card"></i> Account Type:
+                </label>
+                <select id="admin-account-type-select" class="account-type-select" onchange="if(this.value==='teacher'){ openTeacherRegistration(); } else if(this.value==='student'){ openStudentRegistration(); }">
+                    <option value="student">📚 Student Account Registration</option>
+                    <option value="teacher">👨‍🏫 Teacher Account Registration</option>
+                </select>
+            </div>
             <button id="csv-upload-btn" class="btn-blue-submit" style="display: none;" onclick="triggerCSVFileInput()">
                 <i class="fas fa-upload"></i> Upload CSV
             </button>
@@ -947,7 +959,10 @@
                                 <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Middle Name</th>
                                 <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Last Name</th>
                                 <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Birthday</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Age</th>
                                 <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Gender</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600; color: #0a60d6;">LRN (Username)</th>
+                                <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Student Number</th>
                                 <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Cluster</th>
                                 <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Strand</th>
                                 <th style="padding: 10px; text-align: left; border-bottom: 2px solid #ddd; font-weight: 600;">Section</th>
@@ -976,11 +991,15 @@
             <button type="button" class="nav-pill" onclick="goBack()">
                 <i class="fas fa-arrow-left"></i> Back
             </button>
-            <select id="admin-account-type-select-teacher" class="au-input" style="min-width:220px; width:auto;" onchange="if(this.value==='teacher'){ openTeacherRegistration(); } else if(this.value==='student'){ openStudentRegistration(); }">
-                <option value="">Select Account Type</option>
-                <option value="student">Student Account Registration</option>
-                <option value="teacher">Teacher Account Registration</option>
-            </select>
+            <div class="account-type-wrapper">
+                <label for="admin-account-type-select-teacher" class="account-type-label">
+                    <i class="fas fa-id-card"></i> Account Type:
+                </label>
+                <select id="admin-account-type-select-teacher" class="account-type-select" onchange="if(this.value==='teacher'){ openTeacherRegistration(); } else if(this.value==='student'){ openStudentRegistration(); }">
+                    <option value="student">📚 Student Account Registration</option>
+                    <option value="teacher">👨‍🏫 Teacher Account Registration</option>
+                </select>
+            </div>
         </div>
 
         <div class="form-card">
